@@ -37,8 +37,6 @@ def train(nets, optimizers, dataset, **parameters):
     # create some variables for storing data related to rewards
     if get_reward:
         track_reward = torch.zeros(epochs, num_nets, device="cpu")
-        track_reward_by_pos = torch.zeros(epochs, max_possible_output, num_nets, device="cpu")
-        track_confidence = torch.zeros(epochs, max_possible_output, num_nets, device="cpu")
 
     # prepare baseline networks if required
     if baseline:
@@ -128,8 +126,6 @@ def train(nets, optimizers, dataset, **parameters):
                 pretemp_scores = dataset.get_pretemp_scores(scores, choices, temperature)
                 for i in range(num_nets):
                     track_reward[epoch, i] = torch.mean(torch.sum(rewards[i], dim=1)).detach().cpu()
-                    track_reward_by_pos[epoch, :, i] = torch.mean(rewards[i], dim=0).detach().cpu()
-                    confidence[epoch, :, i] = torch.mean(pretemp_scores[i], dim=0).detach().cpu()
 
             # save dataset-specific variables
             epoch_state = dict(
@@ -148,8 +144,6 @@ def train(nets, optimizers, dataset, **parameters):
     results = dict(
         loss=track_loss if get_loss else None,
         reward=track_reward if get_reward else None,
-        reward_by_pos=track_reward_by_pos if get_reward else None,
-        confidence=track_confidence if get_reward else None,
         dataset_variables=dataset_variables,
     )
 
@@ -158,10 +152,9 @@ def train(nets, optimizers, dataset, **parameters):
 
 @torch.no_grad()
 @test_nets
-def test(nets, optimizers, dataset, **parameters):
+def test(nets, dataset, **parameters):
     """a generic boiler plate function for testing and evaluating pointer networks"""
     num_nets = len(nets)
-    assert num_nets == len(optimizers), "Number of networks and optimizers must match"
 
     # get some key training parameters
     epochs = parameters.get("epochs")
@@ -173,6 +166,7 @@ def test(nets, optimizers, dataset, **parameters):
     # process the learning_mode and save conditions
     get_loss = parameters.get("save_loss", False)
     get_reward = parameters.get("save_reward", False)
+    get_target_reward = get_reward and parameters.get("return_target", False)
 
     # create some variables for storing data related to supervised loss
     if get_loss:
@@ -183,6 +177,10 @@ def test(nets, optimizers, dataset, **parameters):
         track_reward = torch.zeros(epochs, num_nets, device="cpu")
         track_reward_by_pos = torch.zeros(epochs, max_possible_output, num_nets, device="cpu")
         track_confidence = torch.zeros(epochs, max_possible_output, num_nets, device="cpu")
+        if get_target_reward:
+            batch_size = dataset.parameters(**parameters).get("batch_size", None)
+            track_target_reward = torch.zeros(epochs, batch_size, device="cpu")
+            track_network_reward = torch.zeros(epochs, batch_size, num_nets, device="cpu")
 
     # create dataset-specified variables for storing data
     dataset_variables = dataset.create_testing_variables(num_nets, **parameters)
@@ -202,10 +200,8 @@ def test(nets, optimizers, dataset, **parameters):
         # get reward
         if get_reward:
             rewards = [dataset.reward_function(choice, batch) for choice in choices]
-
-        # update networks
-        for opt in optimizers:
-            opt.step()
+            if get_target_reward:
+                track_target_reward[epoch] = torch.sum(dataset.reward_function(batch["target"], batch).detach().cpu(), dim=1)
 
         # save training data
         if get_loss:
@@ -218,6 +214,8 @@ def test(nets, optimizers, dataset, **parameters):
                 track_reward[epoch, i] = torch.mean(torch.sum(rewards[i], dim=1)).detach().cpu()
                 track_reward_by_pos[epoch, :, i] = torch.mean(rewards[i], dim=0).detach().cpu()
                 track_confidence[epoch, :, i] = torch.mean(pretemp_scores[i], dim=0).detach().cpu()
+                if get_target_reward:
+                    track_network_reward[epoch, :, i] = torch.sum(rewards[i], dim=1).detach().cpu()
 
         # save dataset-specific variables
         epoch_state = dict(
@@ -238,6 +236,8 @@ def test(nets, optimizers, dataset, **parameters):
         reward=track_reward if get_reward else None,
         reward_by_pos=track_reward_by_pos if get_reward else None,
         confidence=track_confidence if get_reward else None,
+        target_reward=track_target_reward if get_target_reward else None,
+        network_reward=track_network_reward if get_target_reward else None,
         dataset_variables=dataset_variables,
     )
 
