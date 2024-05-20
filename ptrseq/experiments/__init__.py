@@ -11,7 +11,8 @@ def _check_experiment(experiment_name):
     check if experiment is in the registry
     """
     if experiment_name not in EXPERIMENT_REGISTRY:
-        raise ValueError(f"Experiment ({experiment_name}) is not in EXPERIMENT_REGISTRY")
+        valid_experiments = list(EXPERIMENT_REGISTRY.keys())
+        raise ValueError(f"Experiment ({experiment_name}) is not in EXPERIMENT_REGISTRY, valid experiments are: {valid_experiments}")
 
 
 def get_experiment(experiment_name, build=False, **kwargs):
