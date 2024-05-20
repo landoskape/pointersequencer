@@ -1,0 +1,24 @@
+name: dominoes
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.11
+  - pip
+  - numpy
+  - scipy
+  - matplotlib
+  - jupyterlab
+  - ipympl
+  - tqdm
+  - pytorch
+  - torchvision
+  - torchaudio
+  - pytorch-cuda=12.1
+  - black
+  - natsort
+  - pip:
+    - wandb
+    - freezedry
