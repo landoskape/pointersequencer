@@ -806,3 +806,49 @@ class DominoeDataset(DominoeMaster):
 
     def __init__(self, *args, **kwargs):
         DominoeMaster.__init__(self, self.task, *args, **kwargs)
+
+
+def dominoe_string(dominoe):
+    return f"{dominoe[0]:>2}|{dominoe[1]:<2}"
+
+
+def dominoe_sequence_string(dominoes, sequence, direction, player=None, playNumber=None, labelLines=False):
+    # take in game sequence and dominoes and convert to string, then print output
+    # manage inputs --
+    if len(sequence) == 0:
+        print("no play")
+        return
+    input1d = not isinstance(sequence[0], list)
+    if input1d:
+        sequence = [sequence]  # np.reshape(sequence, (1,-1)) # make iterable in the expected way
+    if input1d:
+        direction = [direction]  # np.reshape(direction, (1,-1))
+    if labelLines:
+        if len(sequence) == 1:
+            name = ["dummy: "]
+        else:
+            name = [f"player {idx}: " for idx in range(len(sequence))]
+    else:
+        name = [""] * len(sequence)
+
+    assert all([len(seq) == len(direct) for seq, direct in zip(sequence, direction)]), "sequence and direction do not have same shape"
+    if input1d and player is not None:
+        player = [player]  # np.reshape(player, (1,-1))
+    if player is not None:
+        assert all([len(seq) == len(play) for seq, play in zip(sequence, player)]), "provided player is not same shape as sequence"
+    if input1d and playNumber is not None:
+        playNumber = [playNumber]  # np.reshape(playNumber, (1,-1))
+    if playNumber is not None:
+        assert all([len(seq) == len(play) for seq, play in zip(sequence, playNumber)]), "provided playNumber is not same shape as sequence"
+
+    # now, for each sequence, print out dominoe list in correct direction
+    for idx, seq in enumerate(sequence):
+        sequenceString = [
+            dominoe_string(dominoes[domIdx]) if domDir == 0 else dominoe_string(np.flip(dominoes[domIdx]))
+            for domIdx, domDir in zip(seq, direction[idx])
+        ]
+        if player is not None:
+            sequenceString = [seqString + f" Ag:{cplay}" for seqString, cplay in zip(sequenceString, player[idx])]
+        if playNumber is not None:
+            sequenceString = [seqString + f" P:{cplay}" for seqString, cplay in zip(sequenceString, playNumber[idx])]
+        print(name[idx], sequenceString)

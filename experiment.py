@@ -1,5 +1,5 @@
 from matplotlib.pyplot import show
-from dominoes.experiments import create_experiment
+from ptrseq.experiments import create_experiment
 
 if __name__ == "__main__":
 

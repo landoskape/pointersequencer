@@ -1,4 +1,4 @@
-name: dominoes
+name: pointersequencer
 channels:
   - pytorch
   - nvidia

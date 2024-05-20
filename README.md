@@ -1,4 +1,4 @@
-# Dominoes ML Repository
+# Pointer Sequencer ML Repository
 
 This repository contains a package for running the game of dominoes with 
 python code. It contains a gameplay engine that can manage a game, a library 

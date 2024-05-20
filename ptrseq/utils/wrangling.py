@@ -39,10 +39,14 @@ def compute_stats_by_type(tensor, num_types, dim, method="var"):
     elif method == "std":
         type_dev = torch.std(tensor_by_type, dim=dim + 1)
     elif method == "se":
-        type_dev = torch.std(tensor_by_type, dim=dim + 1) / np.sqrt(num_per_type)
-    elif method == "range":
-        type_dev = ptp(tensor_by_type, dim=dim + 1)
+        type_dev = torch.std(tensor_by_type, dim=dim + 1) / torch.sqrt(num_per_type)
     else:
         raise ValueError(f"Method ({method}) not recognized.")
 
     return type_means, type_dev
+
+
+def argsort(seq):
+    """sort a list by value, return index to sort order"""
+    # http://stackoverflow.com/questions/3071415/efficient-method-to-calculate-the-rank-vector-of-a-list-in-python
+    return sorted(range(len(seq)), key=seq.__getitem__)
