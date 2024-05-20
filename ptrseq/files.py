@@ -7,13 +7,8 @@ from pathlib import Path
 PATH_REGISTRY = {
     "ZandauZand": Path("C:/Users/andrew/Documents/machineLearning"),
     "atlandau": Path("/n/home05/atlandau/machine_learning"),
-    "Andrews-MacBook-Pro.local": Path("C:/Users/andrew/Documents/MachineLearning/Dominoes-Experiments"),
+    "landauland": Path("C:/Users/andrew/Documents/MachineLearning/Dominoes-Experiments"),
 }
-
-
-def get_hostname():
-    """simple method for getting the hostname of the current machine"""
-    return socket.gethostname()
 
 
 def get_username():
@@ -23,11 +18,10 @@ def get_username():
 
 def local_path():
     """method for defining the local root path for datasets and results"""
-    hostname = get_hostname()
-    hostname = hostname if hostname in PATH_REGISTRY else get_username()
-    if hostname not in PATH_REGISTRY:
-        raise ValueError(f"hostname ({hostname}) is not registered in the path registry")
-    return PATH_REGISTRY[hostname]
+    username = get_username()
+    if username not in PATH_REGISTRY:
+        raise ValueError(f"username ({username}) is not registered in the path registry")
+    return PATH_REGISTRY[username]
 
 
 def local_repo_path():
