@@ -103,7 +103,8 @@ class PointerArchitectureComparison(Experiment):
         train_results = train.train(nets, optimizers, dataset, **train_parameters)
 
         # test networks
-        test_parameters = self.make_train_parameters(dataset, train=False, return_target=True)
+        extra_parameters = dict(save_loss=True, save_reward=True, return_target=True)
+        test_parameters = self.make_train_parameters(dataset, train=False, **extra_parameters)
         test_results = train.test(nets, dataset, **test_parameters)
 
         # make full results dictionary
