@@ -39,7 +39,7 @@ def plot_train_results(exp, results, labels, name="train"):
         exp.plot_ready(f"{name}_reward")
 
 
-def plot_train_test_results(exp, results, labels):
+def plot_train_test_results(exp, train_results, test_results, labels):
     """
     Plot reward/loss for training and testing results. Plot reward comparison with target.
 
@@ -51,13 +51,16 @@ def plot_train_test_results(exp, results, labels):
     """
     num_types = len(labels)
 
-    if "loss" in results and results["loss"] is not None:
-        loss = compute_stats_by_type(results["loss"], num_types, 1)[0]
+    raise NotImplementedError("This function is not yet implemented")
+
+    if "loss" in train_results and "loss" in test_results and train_results["loss"] is not None and test_results["loss"] is not None:
+        train_loss = compute_stats_by_type(train_results["loss"], num_types, 1)[0]
+        test_loss = compute_stats_by_type(test_results["loss"], num_types, 1)[0]
         for i in range(num_types):
-            plt.plot(loss[:, i], label=labels[i])
+            plt.plot(train_loss[:, i], label=labels[i])
         plt.xlabel("Epochs")
         plt.ylabel("Loss")
-        plt.title(f"{name} loss")
+        plt.title(f"Train loss")
         plt.legend(fontsize=8)
 
         exp.plot_ready(f"{name}_loss")
