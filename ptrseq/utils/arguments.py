@@ -27,3 +27,14 @@ def process_arguments(args, required_args, required_kwargs, possible_kwargs, nam
             kwargs[value] = args[key]
 
     return rq_args, kwargs
+
+
+def build_args(kvargs=None, kargs=None, append_hyphens=True):
+    """method for building a valid set of arguments from a dictionary"""
+    arg_list = []
+    for key, value in kvargs.items():
+        arg_list.append(f"--{key}" if append_hyphens else key)
+        arg_list.append(value)
+    for key in kargs:
+        arg_list.append(f"--{key}" if append_hyphens else key)
+    return arg_list
