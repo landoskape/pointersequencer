@@ -6,7 +6,8 @@ from .. import train
 from ..networks import get_pointer_network, get_pointer_methods, get_pointer_arguments
 from .base import Experiment
 from . import arglib
-from ..plotting import plot_train_results
+from ..utils import named_transpose
+from ..plotting import plot_train_test_results
 
 
 class PointerArchitectureComparison(Experiment):
@@ -63,21 +64,29 @@ class PointerArchitectureComparison(Experiment):
         # Remove pointer method because it's the variable that this experiment is exploring
         _ = pointer_kwargs.pop("pointer_method", None)
 
-        nets = [
-            get_pointer_network(
-                input_dim,
-                embedding_dim,
-                pointer_method=pointer_method,
-                **context_parameters,
-                **pointer_kwargs,
-            )
-            for pointer_method in self.pointer_methods()
-            for _ in range(self.args.replicates)
-        ]
+        nets, pointer_methods = named_transpose(
+            [
+                (
+                    get_pointer_network(
+                        input_dim,
+                        embedding_dim,
+                        pointer_method=pointer_method,
+                        **context_parameters,
+                        **pointer_kwargs,
+                    ),
+                    pointer_method,
+                )
+                for pointer_method in self.pointer_methods()
+                for _ in range(self.args.replicates)
+            ]
+        )
         nets = [net.to(self.device) for net in nets]
         optimizers = [torch.optim.Adam(net.parameters(), lr=self.args.lr, weight_decay=self.args.wd) for net in nets]
 
-        prms = {}
+        # The only thing that needs to be recorded is the pointer method used for each network
+        prms = dict(
+            pointer_methods=pointer_methods,
+        )
         return nets, optimizers, prms
 
     def main(self):
@@ -108,7 +117,7 @@ class PointerArchitectureComparison(Experiment):
         test_results = train.test(nets, dataset, **test_parameters)
 
         # make full results dictionary
-        results = dict(train_results=train_results, test_results=test_results)
+        results = dict(train_results=train_results, test_results=test_results, prms=prms)
 
         # return results and trained networks
         return results, nets
@@ -118,4 +127,4 @@ class PointerArchitectureComparison(Experiment):
         main plotting loop
         """
         pointer_methods = self.pointer_methods()
-        plot_train_results(self, results["train_results"], pointer_methods, name="training")
+        plot_train_test_results(self, results["train_results"], results["test_results"], pointer_methods)

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-from .utils import compute_stats_by_type
+from .utils import compute_stats_by_type, train_test_plot
 
 
 def plot_train_results(exp, results, labels, name="train"):
@@ -50,28 +50,23 @@ def plot_train_test_results(exp, train_results, test_results, labels):
     The experiment object passed in as the first argument determines if the plot is saved or shown.
     """
     num_types = len(labels)
+    plot_loss = "loss" in train_results and "loss" in test_results and train_results["loss"] is not None and test_results["loss"] is not None
+    plot_reward = (
+        "reward" in train_results and "reward" in test_results and train_results["reward"] is not None and test_results["reward"] is not None
+    )
 
-    raise NotImplementedError("This function is not yet implemented")
+    if plot_loss:
+        train_mean, train_se = compute_stats_by_type(train_results["loss"], num_types, 1)
+        test_mean, test_se = compute_stats_by_type(test_results["loss"].mean(dim=0), num_types, 0)
 
-    if "loss" in train_results and "loss" in test_results and train_results["loss"] is not None and test_results["loss"] is not None:
-        train_loss = compute_stats_by_type(train_results["loss"], num_types, 1)[0]
-        test_loss = compute_stats_by_type(test_results["loss"], num_types, 1)[0]
-        for i in range(num_types):
-            plt.plot(train_loss[:, i], label=labels[i])
-        plt.xlabel("Epochs")
-        plt.ylabel("Loss")
-        plt.title(f"Train loss")
-        plt.legend(fontsize=8)
+        fig, ax = train_test_plot(train_mean, train_se, test_mean, test_se, labels, "loss", ylim=(0, None))
 
-        exp.plot_ready(f"{name}_loss")
+        exp.plot_ready("train_test_loss")
 
-    if "reward" in results and results["reward"] is not None:
-        reward = compute_stats_by_type(results["reward"], num_types, 1)[0]
-        for i in range(num_types):
-            plt.plot(reward[:, i], label=labels[i])
-        plt.xlabel("Epochs")
-        plt.ylabel("Reward")
-        plt.title(f"{name} reward")
-        plt.legend(fontsize=8)
+    if plot_reward:
+        train_mean, train_se = compute_stats_by_type(train_results["reward"], num_types, 1)
+        test_mean, test_se = compute_stats_by_type(test_results["reward"].mean(dim=0), num_types, 0)
 
-        exp.plot_ready(f"{name}_reward")
+        fig, ax = train_test_plot(train_mean, train_se, test_mean, test_se, labels, "reward")
+
+        exp.plot_ready("train_test_reward")
