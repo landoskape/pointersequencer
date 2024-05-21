@@ -11,6 +11,11 @@ PATH_REGISTRY = {
 }
 
 
+def get_hostname():
+    """simple method for getting the hostname of the current machine"""
+    return socket.gethostname()
+
+
 def get_username():
     """simple method for getting the username of the current user"""
     return getpass.getuser()
@@ -18,10 +23,11 @@ def get_username():
 
 def local_path():
     """method for defining the local root path for datasets and results"""
-    username = get_username()
-    if username not in PATH_REGISTRY:
-        raise ValueError(f"username ({username}) is not registered in the path registry")
-    return PATH_REGISTRY[username]
+    hostname = get_hostname()
+    hostname = hostname if hostname in PATH_REGISTRY else get_username()
+    if hostname not in PATH_REGISTRY:
+        raise ValueError(f"hostname ({hostname}) is not registered in the path registry")
+    return PATH_REGISTRY[hostname]
 
 
 def local_repo_path():
@@ -29,7 +35,7 @@ def local_repo_path():
     method for returning local repo path
     (assumes that this module is one below the dominoes package in the main repo folder)
     """
-    repo_folder = os.path.dirname(os.path.abspath(__file__)) + "/.."
+    repo_folder = Path(os.path.dirname(os.path.abspath(__file__))).parent
     return repo_folder
 
 
