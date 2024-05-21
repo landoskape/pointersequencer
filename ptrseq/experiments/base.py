@@ -231,7 +231,10 @@ class Experiment(ABC):
 
     def get_network_path(self, name):
         """Method for loading path to saved network file"""
-        return self.get_dir() / f"{name}.pt"
+        network_path = self.get_dir() / "networks"
+        if not network_path.exists():
+            network_path.mkdir()
+        return network_path / f"{name}.pt"
 
     def get_checkpoint_path(self):
         """Method for loading path to network checkpoint file"""
@@ -251,10 +254,12 @@ class Experiment(ABC):
                 print(f"Requested argument {ak}={vars(self.args)[ak]} differs from saved, which is: {ak}={prms[ak]}. Using saved...")
                 setattr(self.args, ak, prms[ak])
 
-    def save_repo(self, verbose=False):
+    def save_repo(self, ignore_docs=True, verbose=False):
         """Method for saving a copy of the code repo at the time this experiment was run"""
         local_repo_path = files.local_repo_path()
-        freezedry(local_repo_path, self.get_dir() / "frozen_repo.zip", ignore_git=True, use_gitignore=True, verbose=verbose)
+        target_path = self.get_dir() / "frozen_repo.zip"
+        regexp_ignore = ["docs/*"] if ignore_docs else []
+        freezedry(local_repo_path, target_path, ignore_git=True, use_gitignore=True, regexp_ignore=regexp_ignore, verbose=verbose)
 
     def save_experiment(self, results):
         """Method for saving experiment parameters and results to file"""
