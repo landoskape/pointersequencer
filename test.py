@@ -1,62 +1,18 @@
-from multiprocessing import Pool, cpu_count
-import time
-
-import multiprocessing as mp
-import threading
-
-
-class PersistentPool:
-
-    def __init__(self, workers=None):
-        self._mp_pool_lock = threading.Lock()
-        self._pool = None
-        if workers is None:
-            self._pool_count = min(2, int(mp.cpu_count() * 0.50))
-        else:
-            self._pool_count = workers
-
-    @property
-    def mp_pool(self):
-        with self._mp_pool_lock:
-            if self._pool is None:
-                self._pool = mp.Pool(self._pool_count)
-        return self._pool
-
-    def close(self):
-        with self._mp_pool_lock:
-            if self._pool:
-                self._pool.close()
-                self._pool = None
-
-    def __del__(self):
-        self.close()
-
-
-def some_time(t):
-    time.sleep(t)
-    return t
-
+from argparse import ArgumentParser
+from ptrseq.experiments.arglib import add_scheduling_parameters
+from ptrseq.utils import scheduler_from_parser
 
 if __name__ == "__main__":
+    parser = ArgumentParser(description="ArgumentParser for loading experiment constructor", add_help=False)
+    parser
+    parser = add_scheduling_parameters(parser, "lr")
+    args = parser.parse_args()
+    scheduler = scheduler_from_parser(args, "lr", initial_value=1.0)
+    print(args)
+    print(vars(scheduler))
 
-    workers = cpu_count() - 2
-    T = 0.000001
-
-    scale = 10
-    N = [[10] * 100, [1000]]
-    N = [[nn * scale for nn in n] for n in N]
-
-    for nn in N:
-        t = time.time()
-        for n in nn:
-            with Pool(workers) as p:
-                results = p.map(some_time, [T] * n)
-        print("Not persistent:", nn, time.time() - t)
-
-    PPool = PersistentPool(workers=workers)
-    for nn in N:
-        t = time.time()
-        for n in nn:
-            results = PPool.mp_pool.map(some_time, [T] * n)
-        print("Not persistent:", nn, time.time() - t)
-        PPool.close()
+    print("Testing the scheduler:")
+    scheduler.set_epoch(-5)
+    for epoch in range(-5, 15):
+        print(epoch, scheduler.get_epoch(), scheduler.get_value())
+        scheduler.step()
