@@ -21,7 +21,7 @@ def train_test_plot(train_mean, train_se, test_mean, test_se, labels, name, figd
             color=(colormap(idx), alpha),
         )
         ax[1].plot(_get_x(idx), [test_mean[idx]] * 2, color=colormap(idx), label=label, lw=4)
-        ax[1].plot([_get_x(idx), _get_x(idx)], [test_mean[idx] - test_se[idx], test_mean[idx] + test_se[idx]], color=colormap(idx), lw=1.5)
+        ax[1].plot([idx, idx], [test_mean[idx] - test_se[idx], test_mean[idx] + test_se[idx]], color=colormap(idx), lw=1.5)
 
     ax[0].set_xlabel("Training Epoch")
     ax[0].set_ylabel(name)
