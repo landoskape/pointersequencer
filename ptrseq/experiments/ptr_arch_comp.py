@@ -30,6 +30,8 @@ class PointerArchitectureComparison(Experiment):
         """Method for adding experiment specific arguments to the argument parser"""
         parser = arglib.add_standard_training_parameters(parser)
         parser = arglib.add_network_training_metaparameters(parser)
+        parser = arglib.add_scheduling_parameters(parser, "lr")
+        parser = arglib.add_scheduling_parameters(parser, "train_temperature")
         parser = arglib.add_pointernet_parameters(parser)
         parser = arglib.add_pointernet_encoder_parameters(parser)
         parser = arglib.add_pointernet_decoder_parameters(parser)

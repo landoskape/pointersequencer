@@ -2,9 +2,7 @@ from ..utils import argbool
 
 
 def add_standard_training_parameters(parser):
-    """
-    arguments for defining the network type, dataset, optimizer, and other metaparameters
-    """
+    """arguments for defining the network type, dataset, optimizer, and other metaparameters"""
     parser.add_argument("--task", type=str, required=True, help="which task to use (the dataset to load), required")
     parser.add_argument("--learning_mode", type=str, default="reinforce", help="which learning mode to use (default=reinforce)")
     parser.add_argument("--optimizer", type=str, default="Adam", help="what optimizer to train with (default=Adam)")
@@ -19,13 +17,16 @@ def add_standard_training_parameters(parser):
 
 
 def add_network_training_metaparameters(parser):
-    """
-    arguments for determining default network & training metaparameters
-    """
-    parser.add_argument("--lr", type=float, default=1e-3)  # default learning rate
-    parser.add_argument("--wd", type=float, default=0)  # default weight decay
-    parser.add_argument("--gamma", type=float, default=1.0)  # default gamma for reward processing
-    parser.add_argument("--train_temperature", type=float, default=5.0, help="temperature for training")
+    """arguments for determining default network & training metaparameters"""
+    parser.add_argument("--lr", type=float, default=1e-4, help="default learning rate (default=1e-4)")
+    parser.add_argument("--wd", type=float, default=0, help="default weight decay (default=0)")
+    parser.add_argument("--gamma", type=float, default=1.0, help="default gamma for reward processing (default=1.0)")
+    parser.add_argument(
+        "--train_temperature",
+        type=float,
+        default=3.0,
+        help="temperature for training (default=3.0, used for initial_value of scheduler if not provided, or overwritten by it if provided)",
+    )
     parser.add_argument("--thompson", type=argbool, default=True, help="whether to use Thompson sampling during training (default=True)")
     parser.add_argument("--baseline", type=argbool, default=True, help="whether to use a baseline correction during training (default=True)")
     parser.add_argument("--bl_temperature", type=float, default=1.0, help="temperature for baseline networks during training")
@@ -33,6 +34,35 @@ def add_network_training_metaparameters(parser):
     parser.add_argument("--bl_significance", type=float, default=0.05, help="significance level for updating baseline networks (default=0.05)")
     parser.add_argument("--bl_batch_size", type=int, default=1024, help="batch size for baseline networks (default=1024)")
     parser.add_argument("--bl_duty_cycle", type=int, default=10, help="how many epochs to wait before checking baseline improvement (default=10)")
+    return parser
+
+
+def add_scheduling_parameters(parser, name="lr"):
+    """arguments for scheduling a value based on the name given"""
+    permitted_parameters = ["lr", "train_temperature"]
+    if name not in permitted_parameters:
+        raise ValueError(f"parameter '{name}' not in permitted parameters: {permitted_parameters}")
+    parser.add_argument(f"--{name}_scheduler", type=str, default="constant", help=f"which scheduler to use for {name} (default=constant)")
+    parser.add_argument(f"--{name}_step_size", type=int, help=f"step size for the StepScheduler for {name} (default=None)")
+    parser.add_argument(f"--{name}_gamma", type=float, help=f"gamma for the Step/ExponentialScheduler for {name} (default=None)")
+    parser.add_argument(
+        f"--{name}_initial_value",
+        type=float,
+        default=None,
+        help=f"initial value for the LinearScheduler for {name} (default=None, required when using LinearScheduler!)",
+    )
+    parser.add_argument(
+        f"--{name}_final_value",
+        type=float,
+        default=None,
+        help=f"final value for the LinearScheduler for {name} (default=None, required when using LinearScheduler!)",
+    )
+    parser.add_argument(
+        f"--{name}_total_epochs",
+        type=int,
+        default=None,
+        help=f"total epochs for the LinearScheduler for {name} (default=None, required when using LinearScheduler!)",
+    )
     return parser
 
 
