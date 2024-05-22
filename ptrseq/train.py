@@ -2,7 +2,7 @@ from tqdm import tqdm
 import torch
 from .networks.net_utils import forward_batch
 from .networks.baseline import make_baseline_nets, check_baseline_updates
-from .utils import train_nets, test_nets
+from .utils import train_nets, test_nets, get_scheduler
 
 
 @train_nets
@@ -17,7 +17,7 @@ def train(nets, optimizers, dataset, **parameters):
     verbose = parameters.get("verbose", True)
     max_possible_output = parameters.get("max_possible_output")  # this is the maximum number of outputs ever
     learning_mode = parameters.get("learning_mode")
-    temperature = parameters.get("temperature", 1.0)
+    temperature = parameters.get("temperature", get_scheduler("constant", build=True, initial_value=1.0))
     thompson = parameters.get("thompson", True)
     baseline = parameters.get("baseline", True) and learning_mode == "reinforce"
 
@@ -69,7 +69,7 @@ def train(nets, optimizers, dataset, **parameters):
         for opt in optimizers:
             opt.zero_grad()
 
-        scores, choices = forward_batch(nets, batch, max_possible_output, temperature, thompson)
+        scores, choices = forward_batch(nets, batch, max_possible_output, temperature.get_value(), thompson)
 
         # get baseline choices if using them
         if baseline:
@@ -135,9 +135,12 @@ def train(nets, optimizers, dataset, **parameters):
                 loss=loss if get_loss else None,
                 rewards=rewards if get_reward else None,
                 gamma_transform=gamma_transform if learning_mode == "reinforce" else None,
-                temperature=temperature,
+                temperature=temperature.get_value(),
             )
             dataset.save_training_variables(dataset_variables, epoch_state, **parameters)
+
+        # update temperature scheduler
+        temperature.step()
 
     # return training data
     results = dict(
@@ -159,7 +162,7 @@ def test(nets, dataset, **parameters):
     epochs = parameters.get("epochs")
     verbose = parameters.get("verbose", False)
     max_possible_output = parameters.get("max_possible_output")  # this is the maximum number of outputs ever
-    temperature = parameters.get("temperature", 1.0)
+    temperature = parameters.get("temperature", get_scheduler("constant", build=True, initial_value=1.0))
     thompson = parameters.get("thompson", False)
 
     # process the learning_mode and save conditions
@@ -190,7 +193,7 @@ def test(nets, dataset, **parameters):
         # generate a batch
         batch = dataset.generate_batch(**parameters)
 
-        scores, choices = forward_batch(nets, batch, max_possible_output, temperature, thompson)
+        scores, choices = forward_batch(nets, batch, max_possible_output, temperature.get_value(), thompson)
 
         # get loss
         if get_loss:
@@ -209,7 +212,7 @@ def test(nets, dataset, **parameters):
                 track_loss[epoch, i] = loss[i].detach().cpu()
 
         if get_reward:
-            pretemp_scores = dataset.get_pretemp_scores(scores, choices, temperature)
+            pretemp_scores = dataset.get_pretemp_scores(scores, choices, temperature.get_value())
             for i in range(num_nets):
                 track_reward[epoch, i] = torch.mean(torch.sum(rewards[i], dim=1)).detach().cpu()
                 track_reward_by_pos[epoch, :, i] = torch.mean(rewards[i], dim=0).detach().cpu()
@@ -226,9 +229,12 @@ def test(nets, dataset, **parameters):
             loss=loss if get_loss else None,
             rewards=rewards if get_reward else None,
             gamma_transform=None,
-            temperature=temperature,
+            temperature=temperature.get_value(),
         )
         dataset.save_testing_variables(dataset_variables, epoch_state, **parameters)
+
+        # update temperature (probably never used, but here anyway)
+        temperature.step()
 
     # return training data
     results = dict(
