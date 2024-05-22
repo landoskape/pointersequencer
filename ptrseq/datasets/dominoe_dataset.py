@@ -188,7 +188,7 @@ class DominoeMaster(Dataset):
         returns:
             int, the maximum possible output for the dataset (just the handsize)
         """
-        return self.prms["hand_size"]
+        return self.prms["hand_size"] + (1 if self.null_token else 0)
 
     def create_training_variables(self, num_nets, **train_parameters):
         """dataset specific training variable storage"""
@@ -286,6 +286,29 @@ class DominoeMaster(Dataset):
             return self._gettarget_sequencer(dominoes, selection, available, device=device, **prms)
         elif self.task == "sorting":
             return self._gettarget_sorting(dominoes, selection, device=device, **prms)
+        else:
+            raise ValueError(f"task {self.task} not recognized")
+
+    def target_as_choice(self, target, ignore_index=None):
+        """
+        convert the target to a choice based on the ignore index
+
+        args:
+            target: torch.Tensor, the target to convert to a choice
+            ignore_index: int, the index to ignore in the target (default is None, will use dataset.prms["ignore_index"])
+
+        returns:
+            torch.Tensor, the choice based on the target
+        """
+        ignore_index = ignore_index or self.prms["ignore_index"]
+        if self.task == "sequencer":
+            choice = target.clone()
+            choice[choice == ignore_index] = self.prms["hand_size"]  # switch ignores to null index
+            return choice
+        elif self.task == "sorting":
+            if torch.any(target == ignore_index):
+                raise ValueError("ignore_index should not be in the target for the sorting task")
+            return target
         else:
             raise ValueError(f"task {self.task} not recognized")
 

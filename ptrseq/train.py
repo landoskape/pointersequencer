@@ -123,7 +123,6 @@ def train(nets, optimizers, dataset, **parameters):
                     track_loss[epoch, i] = loss[i].detach().cpu()
 
             if get_reward:
-                pretemp_scores = dataset.get_pretemp_scores(scores, choices, temperature)
                 for i in range(num_nets):
                     track_reward[epoch, i] = torch.mean(torch.sum(rewards[i], dim=1)).detach().cpu()
 
@@ -201,7 +200,8 @@ def test(nets, dataset, **parameters):
         if get_reward:
             rewards = [dataset.reward_function(choice, batch) for choice in choices]
             if get_target_reward:
-                track_target_reward[epoch] = torch.sum(dataset.reward_function(batch["target"], batch).detach().cpu(), dim=1)
+                target_as_choice = dataset.target_as_choice(batch["target"])
+                track_target_reward[epoch] = torch.sum(dataset.reward_function(target_as_choice, batch).detach().cpu(), dim=1)
 
         # save training data
         if get_loss:

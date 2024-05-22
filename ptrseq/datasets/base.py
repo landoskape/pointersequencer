@@ -41,7 +41,7 @@ class Dataset(ABC):
         returns:
             dict, the class-specific parameters for this dataset
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def process_arguments(self, parameters):
@@ -54,7 +54,7 @@ class Dataset(ABC):
         returns:
             dict, the processed parameters for the dataset
         """
-        pass
+        raise NotImplementedError
 
     def parameters(self, **prms):
         """
@@ -78,31 +78,37 @@ class Dataset(ABC):
     @abstractmethod
     def get_input_dim(self):
         """required method for getting the input dimension of the dataset"""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_context_parameters(self):
         """required method for getting the context parameters of the dataset for constructing pointer networks"""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_max_possible_output(self):
         """required method for getting the maximum possible output for the dataset"""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def create_training_variables(self, num_nets, **train_parameters):
         """required method for creating training variables for the dataset"""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def save_training_variables(self, training_variables, epoch_state, **train_parameters):
         """required method for saving training variables for the dataset"""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def generate_batch(self, *args, **kwargs):
         """required method for generating a batch"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def target_as_choice(self, target, ignore_index=-100):
+        """required method for converting a target to a choice"""
+        raise NotImplementedError
 
     def set_device(self, device):
         """
@@ -301,4 +307,4 @@ class DatasetRL:
             torch.Tensor, the rewards for the network
             (additional outputs are task dependent)
         """
-        pass
+        raise NotImplementedError

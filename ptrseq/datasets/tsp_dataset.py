@@ -159,6 +159,22 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
 
         return batch
 
+    def target_as_choice(self, target, ignore_index=None):
+        """
+        convert the target to a choice based on the ignore index
+
+        args:
+            target: torch.Tensor, the target to convert to a choice
+            ignore_index: int, the index to ignore in the target (default is None, will use dataset.prms["ignore_index"])
+
+        returns:
+            torch.Tensor, the choice based on the target
+        """
+        ignore_index = ignore_index or self.prms["ignore_index"]
+        if torch.any(target == ignore_index):
+            raise ValueError("ignore_index should not be in the target for the traveling salesman problem!")
+        return target
+
     @torch.no_grad()
     def reward_function(self, choices, batch, new_city_scalar=0.0, **kwargs):
         """
