@@ -33,7 +33,7 @@ def add_network_training_metaparameters(parser):
     parser.add_argument("--bl_thompson", type=argbool, default=False, help="whether to use Thompson sampling for baseline networks (default=False)")
     parser.add_argument("--bl_significance", type=float, default=0.05, help="significance level for updating baseline networks (default=0.05)")
     parser.add_argument("--bl_batch_size", type=int, default=1024, help="batch size for baseline networks (default=1024)")
-    parser.add_argument("--bl_duty_cycle", type=int, default=10, help="how many epochs to wait before checking baseline improvement (default=10)")
+    parser.add_argument("--bl_frequency", type=int, default=10, help="how many epochs to wait before checking baseline improvement (default=10)")
     return parser
 
 
@@ -125,7 +125,7 @@ def add_checkpointing(parser):
     TODO: probably add some arguments for controlling the details of the checkpointing
         : e.g. how often to checkpoint, etc.
     """
-    parser.add_argument("--use_prev", default=False, action="store_true", help="pick up training off previous checkpoint (default=False)")
+    parser.add_argument("--use_prev_ckpts", default=False, action="store_true", help="pick up training off previous checkpoint (default=False)")
     parser.add_argument("--save_ckpts", default=False, action="store_true", help="save checkpoints of models (default=False)")
     parser.add_argument("--uniq_ckpts", default=False, action="store_true", help="save unique checkpoints of models each epoch (default=False)")
     parser.add_argument("--freq_ckpts", default=1, type=int, help="frequency (by epoch) to save checkpoints of models (default=1)")
