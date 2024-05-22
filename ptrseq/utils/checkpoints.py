@@ -24,6 +24,17 @@ def save_checkpoint(nets, optimizers, results, parameters, epoch, path):
     torch.save(checkpoint, path)
 
 
+def _update_results(results, ckpt_results, num_completed):
+    """
+    Helper method for updating results with checkpoint results.
+    """
+    for key in results:
+        if isinstance(results[key], dict):
+            _update_results(results[key], ckpt_results[key])
+        else:
+            results[key][:num_completed] = ckpt_results[key][:num_completed]
+
+
 def load_checkpoint(nets, optimizers, results, device, path):
     """
     Method for loading presaved checkpoint during training.
@@ -38,10 +49,10 @@ def load_checkpoint(nets, optimizers, results, device, path):
     ckpt_results = checkpoint["results"]
 
     # check if results and ckpt results have same structure
-    check_similarity(results, ckpt_results, name1="results", name2="ckpt_results")
+    check_similarity(results, ckpt_results, name1="results", name2="ckpt_results", compare_shapes=False, compare_dims=True)
 
     # update results if they are consistent
-    results.update(ckpt_results)
+    _update_results(results, ckpt_results, checkpoint["epoch"])
 
     # get ids for each net and optimizer
     net_ids = natsorted([key for key in checkpoint if key.startswith("model_state_dict")])

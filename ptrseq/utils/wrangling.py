@@ -52,13 +52,17 @@ def argsort(seq):
     return sorted(range(len(seq)), key=seq.__getitem__)
 
 
-def check_similarity(d1, d2, name1="dict1", name2=None):
+def check_similarity(d1, d2, name1="dict1", name2=None, compare_shapes=False, compare_dims=False):
     # check if results and ckpt results have same structure
     name2 = name2 or name1[:-1] + "2"
     assert d1.keys() == d2.keys(), f"{name1} and {name2} do not have matching keys"
     for key in d1:
-        if isinstance(key, torch.tensor):
-            assert d1[key].shape == d2[key].shape, f"{name1}[{key}] and {name2}[{key}] do not match in their shape"
+        if isinstance(d1[key], torch.tensor):
+            assert isinstance(d2[key], torch.tensor), f"{name1}[{key}] and {name2}[{key}] do not match in their type"
+            if compare_dims:
+                assert d1[key].dim() == d2[key].dim(), f"{name1}[{key}] and {name2}[{key}] do not match in their dim"
+            if compare_shapes:
+                assert d1[key].shape == d2[key].shape, f"{name1}[{key}] and {name2}[{key}] do not match in their shape"
         elif isinstance(d1[key], dict):
             check_similarity(d1[key], d2[key])
         else:

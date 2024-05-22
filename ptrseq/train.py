@@ -51,6 +51,7 @@ def train(nets, optimizers, dataset, **parameters):
         path_ckpts = parameters.get("path_ckpts")  # required if use_prev_ckpts is True
         nets, optimizers, results, num_complete = load_checkpoint(nets, optimizers, results, device, path_ckpts)
         starting_epoch = num_complete + 1
+        print("resuming training from checkpoint on epoch", num_complete)
 
     # handle checkpoint saving parameters
     save_ckpts = parameters.get("save_ckpts", False)
