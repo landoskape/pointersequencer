@@ -31,8 +31,10 @@ def _update_results(results, ckpt_results, num_completed):
     for key in results:
         if isinstance(results[key], dict):
             _update_results(results[key], ckpt_results[key])
-        else:
+        elif isinstance(results[key], torch.tensor):
             results[key][:num_completed] = ckpt_results[key][:num_completed]
+        else:
+            print(f"skipping {key} in checkpoint results update (not a tensor)")
 
 
 def load_checkpoint(nets, optimizers, results, device, path):
