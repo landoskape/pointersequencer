@@ -40,7 +40,7 @@ def load_checkpoint(nets, optimizers, results, device, path):
     # check if results and ckpt results have same structure
     check_similarity(results, ckpt_results, name1="results", name2="ckpt_results")
 
-    # update results if they do
+    # update results if they are consistent
     results.update(ckpt_results)
 
     # get ids for each net and optimizer
