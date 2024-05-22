@@ -32,7 +32,7 @@ def add_network_training_metaparameters(parser):
     parser.add_argument("--bl_temperature", type=float, default=1.0, help="temperature for baseline networks during training")
     parser.add_argument("--bl_thompson", type=argbool, default=False, help="whether to use Thompson sampling for baseline networks (default=False)")
     parser.add_argument("--bl_significance", type=float, default=0.05, help="significance level for updating baseline networks (default=0.05)")
-    parser.add_argument("--bl_batch_size", type=int, default=1024, help="batch size for baseline networks (default=1024)")
+    parser.add_argument("--bl_batch_size", type=int, default=256, help="batch size for baseline networks (default=256)")
     parser.add_argument("--bl_frequency", type=int, default=10, help="how many epochs to wait before checking baseline improvement (default=10)")
     return parser
 
