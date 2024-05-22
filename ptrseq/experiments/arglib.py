@@ -119,10 +119,11 @@ def add_checkpointing(parser):
     TODO: probably add some arguments for controlling the details of the checkpointing
         : e.g. how often to checkpoint, etc.
     """
-    parser.add_argument("--use_prev", default=False, action="store_true", help="if used, will pick up training off previous checkpoint")
-    parser.add_argument("--save_ckpts", default=False, action="store_true", help="if used, will save checkpoints of models")
-    parser.add_argument("--ckpt_frequency", default=1, type=int, help="frequency (by epoch) to save checkpoints of models")
-    parser.add_argument("--use_wandb", default=False, action="store_true", help="if used, will log experiment to WandB")
+    parser.add_argument("--use_prev", default=False, action="store_true", help="pick up training off previous checkpoint (default=False)")
+    parser.add_argument("--save_ckpts", default=False, action="store_true", help="save checkpoints of models (default=False)")
+    parser.add_argument("--uniq_ckpts", default=False, action="store_true", help="save unique checkpoints of models each epoch (default=False)")
+    parser.add_argument("--freq_ckpts", default=1, type=int, help="frequency (by epoch) to save checkpoints of models (default=1)")
+    parser.add_argument("--use_wandb", default=False, action="store_true", help="log experiment to WandB (default=False)")
 
     return parser
 
