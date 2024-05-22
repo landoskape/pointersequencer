@@ -40,7 +40,7 @@ def get_scheduler(scheduler_name, build=False, initial_value=None, **kwargs):
     return scheduler
 
 
-def scheduler_from_parser(args, name, initial_value=None):
+def scheduler_from_parser(args, name, initial_value=None, negative_clip=True):
     """
     get scheduler arguments from parser
 
@@ -64,19 +64,22 @@ def scheduler_from_parser(args, name, initial_value=None):
     if f"{name}_scheduler" not in args_dict:
         # if not, return a constant scheduler with the initial value
         initial_value = initial_value or args_dict[name]
-        return get_scheduler("constant", build=True, initial_value=initial_value)
+        return get_scheduler("constant", build=True, initial_value=initial_value, negative_clip=negative_clip)
 
     # if included, get the name, and check if it is a valid scheduler
     scheduler_name = args_dict[f"{name}_scheduler"].lower()
     _check_scheduler(scheduler_name)
 
+    # get universal arguments for the scheduler
+    initial_value = args_dict[f"{name}_initial_value"] or initial_value or args_dict[name]
+    negative_clip = args_dict[f"{name}_negative_clip"] or negative_clip
+
     # get required arguments for the scheduler
     requirements = SCHEDULER_REQUIREMENTS[scheduler_name]
-    initial_value = args_dict[f"{name}_initial_value"] or initial_value or args_dict[name]
     extra_args = {key: args_dict[f"{name}_{key}"] for key in requirements}
 
     # return constructed scheduler
-    return get_scheduler(scheduler_name, build=True, initial_value=initial_value, **extra_args)
+    return get_scheduler(scheduler_name, build=True, initial_value=initial_value, negative_clip=negative_clip, **extra_args)
 
 
 class _Scheduler(ABC):
@@ -88,11 +91,12 @@ class _Scheduler(ABC):
     in different ways depending on the kind of scheduling.
     """
 
-    def __init__(self, initial_value):
+    def __init__(self, initial_value, negative_clip=True):
         """initialize the scheduler"""
         self.initial_value = initial_value
         self.current_value = initial_value
         self.current_epoch = 0
+        self.negative_clip = negative_clip
 
     def reset(self):
         """reset the scheduler to its initial value and epoch"""
@@ -137,7 +141,12 @@ class _Scheduler(ABC):
             self.current_epoch += 1
 
         # update value
-        self.current_value = self._step_value()
+        next_value = self._step_value()
+        if self.negative_clip and self.current_epoch < 0:
+            next_value = self.initial_value
+
+        # update value
+        self.current_value = next_value
 
 
 class StepScheduler(_Scheduler):
@@ -160,8 +169,8 @@ class StepScheduler(_Scheduler):
         lr_scheduler.step()
     """
 
-    def __init__(self, initial_value, step_size, gamma):
-        super().__init__(initial_value)
+    def __init__(self, initial_value, step_size, gamma, negative_clip=True):
+        super().__init__(initial_value, negative_clip=negative_clip)
         self.step_size = step_size
         self.gamma = gamma
 
@@ -188,8 +197,8 @@ class ExponentialScheduler(_Scheduler):
         lr_scheduler.step()
     """
 
-    def __init__(self, initial_value, gamma):
-        super().__init__(initial_value)
+    def __init__(self, initial_value, gamma, negative_clip=True):
+        super().__init__(initial_value, negative_clip=negative_clip)
         self.gamma = gamma
 
     def _step_value(self):
@@ -215,8 +224,8 @@ class ExponentialBaselineScheduler(_Scheduler):
         lr_scheduler.step()
     """
 
-    def __init__(self, initial_value, final_value, gamma):
-        super().__init__(initial_value)
+    def __init__(self, initial_value, final_value, gamma, negative_clip=True):
+        super().__init__(initial_value, negative_clip=negative_clip)
         self.final_value = final_value
         self.value_range = self.initial_value - self.final_value
         self.gamma = gamma
@@ -242,8 +251,8 @@ class LinearScheduler(_Scheduler):
         lr_scheduler.step()
     """
 
-    def __init__(self, initial_value, final_value, total_epochs):
-        super().__init__(initial_value)
+    def __init__(self, initial_value, final_value, total_epochs, negative_clip=True):
+        super().__init__(initial_value, negative_clip=negative_clip)
         self.final_value = final_value
         self.total_epochs = total_epochs
         self.value_range = self.initial_value - self.final_value
@@ -271,8 +280,8 @@ class ConstantScheduler(_Scheduler):
         lr_scheduler.step()
     """
 
-    def __init__(self, initial_value):
-        super().__init__(initial_value)
+    def __init__(self, initial_value, negative_clip=True):
+        super().__init__(initial_value, negative_clip=negative_clip)
 
     def _step_value(self):
         """update the value of the scheduler"""

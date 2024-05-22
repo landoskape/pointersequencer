@@ -52,6 +52,12 @@ def add_scheduling_parameters(parser, name="lr"):
         help=f"initial value for the LinearScheduler for {name} (default=None, required when using LinearScheduler!)",
     )
     parser.add_argument(
+        f"--{name}_negative_clip",
+        type=argbool,
+        default=True,
+        help=f"whether to clip the value to be the initial value for negative epochs for {name} schedulers (default=True)",
+    )
+    parser.add_argument(
         f"--{name}_final_value",
         type=float,
         default=None,
