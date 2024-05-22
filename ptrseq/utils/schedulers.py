@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from .classes import AttributeDict
 
 
 def _check_scheduler(scheduler_name):
@@ -188,6 +187,35 @@ class ExponentialScheduler(_Scheduler):
         return self.initial_value * self.gamma**self.current_epoch
 
 
+class ExponentialBaselineScheduler(_Scheduler):
+    """
+    -- written to be similar to pytorch! some documentation copied directly: --
+
+    Decays the value of the stored parameter by gamma every epoch towards a shifted baseline.
+
+    Explicitly references to epoch 0, such that if the initial value is 0.1,
+    if you set the epoch to -2 and then call step(), the new value will be 1.0.
+    (Because the epoch will be adjusted to -1 before stepping).
+
+    Example:
+    ```python
+    lr_scheduler = ExponentialBaselineScheduler(initial_value=2.0, final_value=1.0, gamma=0.01)
+    for epoch in range(100):
+        train(..., lr=lr_scheduler.get_value())
+        lr_scheduler.step()
+    """
+
+    def __init__(self, initial_value, final_value, gamma):
+        super().__init__(initial_value)
+        self.final_value = final_value
+        self.value_range = self.initial_value - self.final_value
+        self.gamma = gamma
+
+    def _step_value(self):
+        """update the value of the scheduler"""
+        return self.final_value + self.value_range * self.gamma**self.current_epoch
+
+
 class LinearScheduler(_Scheduler):
     """
     -- written to be similar to pytorch! some documentation copied directly: --
@@ -244,6 +272,7 @@ class ConstantScheduler(_Scheduler):
 SCHEDULER_REGISTRY = {
     "step": StepScheduler,
     "exp": ExponentialScheduler,
+    "expbase": ExponentialBaselineScheduler,
     "linear": LinearScheduler,
     "constant": ConstantScheduler,
 }
@@ -251,6 +280,7 @@ SCHEDULER_REGISTRY = {
 SCHEDULER_REQUIREMENTS = {
     "step": ["step_size", "gamma"],
     "exp": ["gamma"],
+    "expbase": ["final_value", "gamma"],
     "linear": ["final_value", "total_epochs"],
     "constant": [],
 }
