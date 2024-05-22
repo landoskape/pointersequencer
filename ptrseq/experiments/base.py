@@ -238,8 +238,8 @@ class Experiment(ABC):
         return network_path / f"{name}.pt"
 
     def get_checkpoint_path(self):
-        """Method for loading path to network checkpoint file"""
-        return self.get_dir() / "checkpoint.tar"
+        """Method for loading path to network checkpoint file directory"""
+        return self.get_dir()
 
     def _update_args(self, prms):
         """Method for updating arguments from saved parameter dictionary"""
@@ -360,37 +360,50 @@ class Experiment(ABC):
         """simple method for getting training parameters"""
         # get the training/testing parameters
         parameters = {}
-        parameters["epochs"] = self.args.train_epochs if train else self.args.test_epochs
+        parameters["num_epochs"] = self.args.train_epochs if train else self.args.test_epochs
         parameters["device"] = self.device
-        parameters["verbose"] = not self.args.silent
-        parameters["learning_mode"] = self.args.learning_mode
+        parameters["verbose"] = not getattr(self.args, "silent", False)
+        if train:
+            parameters["learning_mode"] = getattr(self.args, "learning_mode")
         parameters["max_possible_output"] = dataset.get_max_possible_output()
-        parameters["gamma"] = self.args.gamma
+        parameters["gamma"] = getattr(self.args, "gamma", 1.0)
 
         # handle network state parameters -- temperature should be scheduled for training and 1.0 always for testing
-        parameters["thompson"] = self.args.thompson if train else False
+        parameters["thompson"] = getattr(self.args, "thompson", True) if train else False
         if train:
             parameters["temperature"] = scheduler_from_parser(self.args, "train_temperature")
         else:
             parameters["temperature"] = get_scheduler("constant", build=True, initial_value=1.0)
 
         # Saving parameters
-        parameters["save_loss"] = self.args.save_loss
-        parameters["save_reward"] = self.args.save_reward
+        parameters["save_loss"] = getattr(self.args, "save_loss", False)
+        parameters["save_reward"] = getattr(self.args, "save_reward", False)
 
         # Handle return_target
         # (If using supervised learning or saving loss, then return_target=True, otherwise False)
         # (If you want to test target reward, use parameter_updates to request this in the caller function)
-        parameters["return_target"] = self.args.learning_mode == "supervised" or self.args.save_loss
+        parameters["return_target"] = getattr(self.args, "learning_mode", "") == "supervised" or getattr(self.args, "save_loss", False)
 
         # Handle baseline parameters
-        parameters["baseline"] = self.args.baseline if train else False
+        parameters["baseline"] = getattr(self.args, "baseline", False) if train else False
         if parameters["baseline"]:
             parameters["bl_temperature"] = self.args.bl_temperature
             parameters["bl_thompson"] = self.args.bl_thompson
             parameters["bl_significance"] = self.args.bl_significance
             parameters["bl_batch_size"] = self.args.bl_batch_size
-            parameters["bl_duty_cycle"] = self.args.bl_duty_cycle
+            parameters["bl_frequency"] = self.args.bl_frequency
+
+        # Handle checkpointing parameters (only used for training)
+        if train:
+            parameters["use_prev_ckpts"] = getattr(self.args, "use_prev_ckpts", False)
+            parameters["save_ckpts"] = getattr(self.args, "save_ckpts", False)
+            if parameters["save_ckpts"]:
+                parameters["uniq_ckpts"] = self.args.uniq_ckpts
+                parameters["freq_ckpts"] = self.args.freq_ckpts
+                parameters["path_ckpts"] = self.get_checkpoint_path()
+
+        # Handle wandb parameters
+        parameters["use_wandb"] = getattr(self.args, "use_wandb")
 
         # additionally update parameters directly if requested
         parameters.update(parameter_updates)
