@@ -50,3 +50,17 @@ def argsort(seq):
     """sort a list by value, return index to sort order"""
     # http://stackoverflow.com/questions/3071415/efficient-method-to-calculate-the-rank-vector-of-a-list-in-python
     return sorted(range(len(seq)), key=seq.__getitem__)
+
+
+def check_similarity(d1, d2, name1="dict1", name2=None):
+    # check if results and ckpt results have same structure
+    name2 = name2 or name1[:-1] + "2"
+    assert d1.keys() == d2.keys(), f"{name1} and {name2} do not have matching keys"
+    for key in d1:
+        if isinstance(key, torch.tensor):
+            assert d1[key].shape == d2[key].shape, f"{name1}[{key}] and {name2}[{key}] do not match in their shape"
+        elif isinstance(d1[key], dict):
+            check_similarity(d1[key], d2[key])
+        else:
+            assert type(d1[key]) == type(d2[key]), f"d1[{key}] and d2[{key}] do not match in their type"
+            print(f"found other type in {name1}: {key}, type={type(d1[key])}. Not checking for similarity with checkpoint.")
