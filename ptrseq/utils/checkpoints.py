@@ -1,5 +1,15 @@
-import torch
 from natsort import natsorted
+import torch
+
+
+def make_checkpoint_path(path_ckpt, epoch, uniq_ckpts):
+    """make checkpoint path unique for each epoch if requested"""
+    # if unique, add the epoch to the checkpoint path
+    if uniq_ckpts:
+        return path_ckpt / "checkpoints" / f"checkpoint_{epoch}.tar"
+
+    # otherwise just save a single checkpoint file
+    return path_ckpt / "checkpoint.tar"
 
 
 def save_checkpoint(nets, optimizers, results, path):
