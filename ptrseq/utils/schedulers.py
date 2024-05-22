@@ -57,14 +57,24 @@ def scheduler_from_parser(args, name, initial_value=None):
         args: argparse.Namespace object
         name: str, name of the scheduler
     """
-    # get scheduler name, check if it's valid
+    # convert args to dictionary
     args_dict = vars(args)
+
+    # check if the scheduler parameters are included in the parser
+    if f"{name}_scheduler" not in args_dict:
+        # if not, return a constant scheduler with the initial value
+        initial_value = initial_value or args_dict[name]
+        return get_scheduler("constant", build=True, initial_value=initial_value)
+
+    # if included, get the name, and check if it is a valid scheduler
     scheduler_name = args_dict[f"{name}_scheduler"].lower()
     _check_scheduler(scheduler_name)
+
     # get required arguments for the scheduler
     requirements = SCHEDULER_REQUIREMENTS[scheduler_name]
     initial_value = args_dict[f"{name}_initial_value"] or initial_value or args_dict[name]
     extra_args = {key: args_dict[f"{name}_{key}"] for key in requirements}
+
     # return constructed scheduler
     return get_scheduler(scheduler_name, build=True, initial_value=initial_value, **extra_args)
 

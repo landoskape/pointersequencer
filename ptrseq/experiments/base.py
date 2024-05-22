@@ -13,6 +13,7 @@ from matplotlib import pyplot as plt
 
 from .. import files as files
 from ..datasets import get_dataset
+from ..utils import get_scheduler, scheduler_from_parser
 
 
 class Experiment(ABC):
@@ -357,30 +358,44 @@ class Experiment(ABC):
 
     def make_train_parameters(self, dataset, train=True, **parameter_updates):
         """simple method for getting training parameters"""
-        # get the training parameters
+        # get the training/testing parameters
         parameters = {}
         parameters["epochs"] = self.args.train_epochs if train else self.args.test_epochs
         parameters["device"] = self.device
         parameters["verbose"] = not self.args.silent
-        parameters["max_possible_output"] = dataset.get_max_possible_output()
         parameters["learning_mode"] = self.args.learning_mode
-        parameters["temperature"] = self.args.train_temperature if train else 1.0
-        parameters["thompson"] = self.args.thompson if train else False
-        parameters["baseline"] = self.args.baseline if train else False
-        parameters["bl_temperature"] = self.args.bl_temperature
-        parameters["bl_thompson"] = self.args.bl_thompson
-        parameters["bl_significance"] = self.args.bl_significance
-        parameters["bl_batch_size"] = self.args.bl_batch_size
-        parameters["bl_duty_cycle"] = self.args.bl_duty_cycle
+        parameters["max_possible_output"] = dataset.get_max_possible_output()
         parameters["gamma"] = self.args.gamma
+
+        # handle network state parameters -- temperature should be scheduled for training and 1.0 always for testing
+        parameters["thompson"] = self.args.thompson if train else False
+        if train:
+            parameters["temperature"] = scheduler_from_parser(self.args, "train_temperature")
+        else:
+            parameters["temperature"] = get_scheduler("constant", build=True, initial_value=1.0)
+
+        # Saving parameters
         parameters["save_loss"] = self.args.save_loss
         parameters["save_reward"] = self.args.save_reward
+
         # Handle return_target
-        # (If required for supervised learning or saving loss, then return_target=True, otherwise False)
-        # (When testing but not using supervised or saving loss during training, use parameter_updates)
+        # (If using supervised learning or saving loss, then return_target=True, otherwise False)
+        # (If you want to test target reward, use parameter_updates to request this in the caller function)
         parameters["return_target"] = self.args.learning_mode == "supervised" or self.args.save_loss
+
+        # Handle baseline parameters
+        parameters["baseline"] = self.args.baseline if train else False
+        if parameters["baseline"]:
+            parameters["bl_temperature"] = self.args.bl_temperature
+            parameters["bl_thompson"] = self.args.bl_thompson
+            parameters["bl_significance"] = self.args.bl_significance
+            parameters["bl_batch_size"] = self.args.bl_batch_size
+            parameters["bl_duty_cycle"] = self.args.bl_duty_cycle
+
         # additionally update parameters directly if requested
         parameters.update(parameter_updates)
+
+        # return train loop parameters
         return parameters
 
     def plot_ready(self, name):
