@@ -6,7 +6,7 @@ def _get_x(idx, xOffset=[-0.2, 0.2]):
     return [xOffset[0] + idx, xOffset[1] + idx]
 
 
-def train_test_plot(train_mean, train_se, test_mean, test_se, labels, name, figdim=3, figratio=2, alpha=0.3, cmap="tab10", ylim=None):
+def train_test_plot(train_mean, train_se, test_mean, test_se, labels, name, figdim=5, figratio=2, alpha=0.3, cmap="tab10", ylim=None):
     num_types = len(labels)
     colormap = mpl.colormaps[cmap]
     width_ratios = [figdim, figdim / figratio]
@@ -30,7 +30,7 @@ def train_test_plot(train_mean, train_se, test_mean, test_se, labels, name, figd
     ylims = ax[0].get_ylim()
 
     ax[1].set_xticks(range(num_types))
-    ax[1].set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
+    ax[1].set_xticklabels(labels, rotation=45, ha="right", fontsize=10)
     ax[1].set_title("Testing " + name)
     ax[1].set_xlim(-0.5, num_types - 0.5)
     ax[1].set_ylim(ylims)
