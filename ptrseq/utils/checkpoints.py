@@ -14,13 +14,41 @@ def make_checkpoint_path(path_ckpt, epoch, uniq_ckpts):
     return path_ckpt / "checkpoint.tar"
 
 
+def get_checkpoint_path(path_ckpt, epoch=None):
+    """get checkpoint path for loading or saving"""
+    # if epoch is provided, search for the specific checkpoint requested
+    if epoch is not None:
+        path = make_checkpoint_path(path_ckpt, epoch, True)
+        if path.exists():
+            return path
+
+    # search for latest unique checkpoint
+    prev_checkpoints = list((path_ckpt / "checkpoints").glob("checkpoint_*"))
+    single_checkpoint = path_ckpt / "checkpoint.tar"
+
+    # if unique checkpoints found, return the latest one (with a warning if non-unique checkpoint also exists)
+    if prev_checkpoints:
+        if single_checkpoint.exists():
+            print(f"WARNING: found both unique and non-unique checkpoints in {path_ckpt}, using latest unique checkpoint.")
+        return natsorted(prev_checkpoints)[-1]
+
+    # if no unique checkpoints found, return the single checkpoint if it exists
+    if single_checkpoint.exists():
+        return single_checkpoint
+
+    # otherwise return None to indicate that no checkpoints were found
+    return None
+
+
 def save_checkpoint(nets, optimizers, results, parameters, epoch, path):
     """
     Method for saving checkpoints for networks throughout training.
     """
     multi_model_ckpt = {f"model_state_dict_{i}": net.state_dict() for i, net in enumerate(nets)}
     multi_optimizer_ckpt = {f"optimizer_state_dict_{i}": opt.state_dict() for i, opt in enumerate(optimizers)}
-    checkpoint = results | multi_model_ckpt | multi_optimizer_ckpt | dict(epoch=epoch) | dict(parameters=parameters)
+    checkpoint = dict(results=results) | multi_model_ckpt | multi_optimizer_ckpt | dict(epoch=epoch) | dict(parameters=parameters)
+    if not path.parent.exists():
+        path.parent.mkdir(parents=True)
     torch.save(checkpoint, path)
 
 
@@ -30,31 +58,32 @@ def _update_results(results, ckpt_results, num_completed):
     """
     for key in results:
         if isinstance(results[key], dict):
-            _update_results(results[key], ckpt_results[key])
-        elif isinstance(results[key], torch.tensor):
+            _update_results(results[key], ckpt_results[key], num_completed)
+        elif isinstance(results[key], torch.Tensor):
             results[key][:num_completed] = ckpt_results[key][:num_completed]
         else:
             print(f"skipping {key} in checkpoint results update (not a tensor)")
 
 
-def load_checkpoint(nets, optimizers, results, device, path):
+def load_checkpoint(nets, optimizers, results, parameters, device, path):
     """
     Method for loading presaved checkpoint during training.
     TODO: device handling for passing between gpu/cpu
     """
-    # get latest checkpoint (first check for unique checkpoints, then check for checkpoint.tar)
-    prev_checkpoints = list((path / "checkpoints").glob("checkpoint_*"))
-    latest_checkpoint = natsorted(prev_checkpoints)[-1] if prev_checkpoints else path / "checkpoint.tar"
 
-    print(f"loading from latest checkpoint: {latest_checkpoint}")
-    checkpoint = torch.load(latest_checkpoint, map_location=device)
+    print(f"loading from latest checkpoint: {path}")
+    checkpoint = torch.load(path, map_location=device)
     ckpt_results = checkpoint["results"]
+    ckpt_parameters = checkpoint["parameters"]
+    if ckpt_parameters["num_epochs"] > parameters["num_epochs"]:
+        raise ValueError(f"checkpoint num_epochs ({ckpt_parameters['num_epochs']}) is greater than current num_epochs ({parameters['num_epochs']})")
 
     # check if results and ckpt results have same structure
     check_similarity(results, ckpt_results, name1="results", name2="ckpt_results", compare_shapes=False, compare_dims=True)
 
     # update results if they are consistent
-    _update_results(results, ckpt_results, checkpoint["epoch"])
+    num_completed = checkpoint["epoch"] + 1
+    _update_results(results, ckpt_results, num_completed)
 
     # get ids for each net and optimizer
     net_ids = natsorted([key for key in checkpoint if key.startswith("model_state_dict")])
@@ -74,4 +103,4 @@ def load_checkpoint(nets, optimizers, results, device, path):
     for net in nets:
         net.to(device)
 
-    return nets, optimizers, results, checkpoint["epoch"]
+    return nets, optimizers, results, num_completed

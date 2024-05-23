@@ -3,7 +3,7 @@ import torch
 from .networks.net_utils import forward_batch
 from .networks.baseline import make_baseline_nets, check_baseline_updates
 from .utils import train_nets, test_nets, get_scheduler
-from .utils import make_checkpoint_path, save_checkpoint, load_checkpoint
+from .utils import make_checkpoint_path, get_checkpoint_path, save_checkpoint, load_checkpoint
 
 
 @train_nets
@@ -23,35 +23,37 @@ def train(nets, optimizers, dataset, **parameters):
     thompson = parameters.get("thompson", True)
     baseline = parameters.get("baseline", True) and learning_mode == "reinforce"
 
-    # create a results dictionary for storing training data
-    results = dict()
-    # create some variables for storing data related to supervised loss
-    if get_loss:
-        results["track_loss"] = torch.zeros(num_epochs, num_nets, device="cpu")
-
-    # create some variables for storing data related to rewards
-    if get_reward:
-        results["track_reward"] = torch.zeros(num_epochs, num_nets, device="cpu")
-
-    # create dataset-specified variables for storing data
-    results["dataset_variables"] = dataset.create_training_variables(num_nets, **parameters)
-
-    # process the learning_mode and save conditions
-    get_loss = learning_mode == "supervised" or parameters.get("save_loss", False)
-    get_reward = learning_mode == "reinforce" or parameters.get("save_reward", False)
-
     # create gamma transform for processing reward if not provided in parameters
     if learning_mode == "reinforce":
         gamma = parameters.get("gamma")
         gamma_transform = dataset.create_gamma_transform(max_possible_output, gamma, device=device)
 
+    # process the learning_mode and save conditions
+    get_loss = learning_mode == "supervised" or parameters.get("save_loss", False)
+    get_reward = learning_mode == "reinforce" or parameters.get("save_reward", False)
+
+    # create a results dictionary for storing training data
+    results = dict()
+
+    # create some variables for storing data related to supervised loss
+    if get_loss:
+        results["loss"] = torch.zeros(num_epochs, num_nets, device="cpu")
+
+    # create some variables for storing data related to rewards
+    if get_reward:
+        results["reward"] = torch.zeros(num_epochs, num_nets, device="cpu")
+
+    # create dataset-specified variables for storing data
+    results["dataset_variables"] = dataset.create_training_variables(num_nets, **parameters)
+
     # load checkpoints if required
     use_prev_ckpts = parameters.get("use_prev_ckpts", False)
     if use_prev_ckpts:
         path_ckpts = parameters.get("path_ckpts")  # required if use_prev_ckpts is True
-        nets, optimizers, results, num_complete = load_checkpoint(nets, optimizers, results, device, path_ckpts)
-        starting_epoch = num_complete + 1
-        print("resuming training from checkpoint on epoch", num_complete)
+        checkpoint_path = get_checkpoint_path(path_ckpts)
+        if checkpoint_path is not None:
+            nets, optimizers, results, starting_epoch = load_checkpoint(nets, optimizers, results, parameters, device, checkpoint_path)
+            print("resuming training from checkpoint on epoch", starting_epoch)
 
     # handle checkpoint saving parameters
     save_ckpts = parameters.get("save_ckpts", False)
@@ -79,8 +81,11 @@ def train(nets, optimizers, dataset, **parameters):
         )
 
     # epoch loop
-    epoch_loop = tqdm(range(starting_epoch, num_epochs)) if verbose else range(starting_epoch, num_epochs)
+    epoch_loop = tqdm(range(starting_epoch, num_epochs), desc="Training Networks") if verbose else range(starting_epoch, num_epochs)
     for epoch in epoch_loop:
+        # update scheduler values
+        temperature.step(epoch=epoch)
+
         # generate a batch
         batch = dataset.generate_batch(**parameters)
 
@@ -139,11 +144,11 @@ def train(nets, optimizers, dataset, **parameters):
         with torch.no_grad():
             if get_loss:
                 for i in range(num_nets):
-                    results["track_loss"][epoch, i] = loss[i].detach().cpu()
+                    results["loss"][epoch, i] = loss[i].detach().cpu()
 
             if get_reward:
                 for i in range(num_nets):
-                    results["track_reward"][epoch, i] = torch.mean(torch.sum(rewards[i], dim=1)).detach().cpu()
+                    results["reward"][epoch, i] = torch.mean(torch.sum(rewards[i], dim=1)).detach().cpu()
 
             # save dataset-specific variables
             epoch_state = dict(
@@ -168,16 +173,7 @@ def train(nets, optimizers, dataset, **parameters):
                 make_checkpoint_path(path_ckpts, epoch, uniq_ckpts),
             )
 
-        # update temperature scheduler
-        temperature.step()
-
     # return training data
-    results = dict(
-        loss=track_loss if get_loss else None,
-        reward=track_reward if get_reward else None,
-        dataset_variables=dataset_variables,
-    )
-
     return results
 
 
