@@ -360,6 +360,7 @@ class Experiment(ABC):
         """simple method for getting training parameters"""
         # get the training/testing parameters
         parameters = {}
+        parameters["train"] = train  # controls dataset batch generation
         parameters["num_epochs"] = self.args.train_epochs if train else self.args.test_epochs
         parameters["device"] = self.device
         parameters["verbose"] = not getattr(self.args, "silent", False)
