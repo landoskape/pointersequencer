@@ -357,10 +357,15 @@ class DominoeMaster(Dataset):
         # Depending on the batch size and hand size, doing this with parallel pool is sometimes faster
         threads = prms.get("threads")
         if threads > 1:
-            with Pool(threads) as pool:
-                # arguments to get_best_line are (dominoes, available, value_method)
-                pool_args = [(dominoes[sel], ava, value) for sel, ava, value in zip(selection, available, repeat(prms["value_method"]))]
-                results = pool.starmap(get_best_line, pool_args)
+            if not hasattr(self, "persistent_pool"):
+                self.create_persistent_pool(threads)
+
+            # arguments to get_best_line are (dominoes, available, value_method)
+            pool_args = [(dominoes[sel], ava, value) for sel, ava, value in zip(selection, available, repeat(prms["value_method"]))]
+            # results = pool.starmap(get_best_line, pool_args)
+            results = self.persistent_pool_starmap(get_best_line, pool_args)
+
+            # get results as named variables
             best_seq, best_dir = named_transpose(results)
         else:
             # Unless the batch size is very large, this is usually faster

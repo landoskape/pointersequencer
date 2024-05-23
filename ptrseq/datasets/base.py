@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from copy import copy
 import torch
 
+from ..utils import PersistentPool
+
 
 class RequiredParameter:
     """
@@ -74,6 +76,26 @@ class Dataset(ABC):
         prms_to_use.update(prms)
         # return to caller function
         return prms_to_use
+
+    def create_persistent_pool(self, threads):
+        """create a persistent pool for the dataset"""
+        self.persistent_pool = PersistentPool(workers=threads)
+
+    def persistent_pool_map(self, func, *args):
+        """helper for using persistent pool"""
+        return self.persistent_pool.mp_pool.map(func, args)
+
+    def persistent_pool_starmap(self, func, *args):
+        """helper for using persistent pool"""
+        return self.persistent_pool.mp_pool.starmap(func, *args)
+
+    def persistent_pool_imap(self, func, *args):
+        """helper for using persistent pool"""
+        return self.persistent_pool.mp_pool.imap(func, args)
+
+    def close_pool(self):
+        """helper for closing persistent pool"""
+        self.persistent_pool.close()
 
     @abstractmethod
     def get_input_dim(self):

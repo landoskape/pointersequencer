@@ -287,17 +287,3 @@ def make_path(coordinates, distances, init):
     best_path = best_path[1:]  # torch.roll(best_path, -1)
 
     return best_path
-
-
-def get_paths(coordinates, distances, init, threads=1):
-    """
-    for batch of (batch, num_cities, 2), returns shortest path using
-    held-karp algorithm that ends closest to origin and is clockwise
-    """
-    if threads > 1:
-        with Pool(threads) as p:
-            path = list(p.starmap(make_path, zip(coordinates, distances, init)))
-    else:
-        path = [make_path(coord, dist, idx) for coord, dist, idx in zip(coordinates, distances, init)]
-
-    return torch.stack(path).long()

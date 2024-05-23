@@ -3,7 +3,7 @@ import torch
 
 
 from .base import Dataset, DatasetSL, DatasetRL, RequiredParameter
-from .support import get_paths
+from .support import make_path
 from ..utils import process_arguments
 
 
@@ -138,7 +138,6 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
         # get parameters with potential updates
         prms = self.parameters(**kwargs)
 
-        # def tsp_batch(batch_size, num_cities, return_target=True, return_full=False, threads=1):
         input = torch.rand((prms["batch_size"], prms["num_cities"], prms["coord_dims"]), dtype=torch.float)
         dists = torch.cdist(input, input)
 
@@ -155,9 +154,28 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
         batch.update(prms)
 
         if prms["return_target"]:
-            batch["target"] = self.input_to_device(get_paths(input, dists, init, prms["threads"]), device=device)
+
+            batch["target"] = self.input_to_device(self.get_paths(input, dists, init, prms["threads"]), device=device)
 
         return batch
+
+    def get_paths(self, coordinates, distances, init, threads=1):
+        """
+        for batch of (batch, num_cities, 2), returns shortest path using
+        held-karp algorithm that ends closest to origin and is clockwise
+        """
+        if threads > 1:
+            if not hasattr(self, "persistent_pool"):
+                self.create_persistent_pool(threads)
+                print("making a persistent pool")
+
+            # get paths
+            path = list(self.persistent_pool_starmap(make_path, zip(coordinates, distances, init)))
+
+        else:
+            path = [make_path(coord, dist, idx) for coord, dist, idx in zip(coordinates, distances, init)]
+
+        return torch.stack(path).long()
 
     def target_as_choice(self, target, ignore_index=None):
         """
