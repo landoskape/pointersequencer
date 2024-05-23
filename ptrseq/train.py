@@ -213,7 +213,7 @@ def test(nets, dataset, **parameters):
     dataset_variables = dataset.create_testing_variables(num_nets, **parameters)
 
     # epoch loop
-    epoch_loop = tqdm(range(num_epochs)) if verbose else range(num_epochs)
+    epoch_loop = tqdm(range(num_epochs), desc="Testing Networks") if verbose else range(num_epochs)
     for epoch in epoch_loop:
         # generate a batch
         batch = dataset.generate_batch(**parameters)
