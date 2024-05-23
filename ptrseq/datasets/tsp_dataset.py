@@ -167,7 +167,6 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
         if threads > 1:
             if not hasattr(self, "persistent_pool"):
                 self.create_persistent_pool(threads)
-                print("making a persistent pool")
 
             # get paths
             path = list(self.persistent_pool_starmap(make_path, zip(coordinates, distances, init)))

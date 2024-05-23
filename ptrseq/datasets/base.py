@@ -95,7 +95,8 @@ class Dataset(ABC):
 
     def close_pool(self):
         """helper for closing persistent pool"""
-        self.persistent_pool.close()
+        if hasattr(self, "persistent_pool") and self.persistent_pool is not None:
+            self.persistent_pool.close()
 
     @abstractmethod
     def get_input_dim(self):
