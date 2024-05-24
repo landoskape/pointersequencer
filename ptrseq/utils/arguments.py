@@ -29,14 +29,13 @@ def process_arguments(args, required_args, required_kwargs, possible_kwargs, nam
     return rq_args, kwargs
 
 
-def build_args(kvargs={}, kargs=[], append_hyphens=True):
+def build_args(*kargs, kvargs={}, append_hyphens=True):
     """method for building a valid set of arguments from a dictionary"""
-    arg_list = []
     assert isinstance(kvargs, dict), "kvargs must be a dictionary"
+    arg_list = []
+    for key in kargs:
+        arg_list.append(key)
     for key, value in kvargs.items():
         arg_list.append(f"--{key}" if append_hyphens else key)
         arg_list.append(value)
-    assert type(kargs) == list or type(kargs) == tuple, "kargs must be a list or tuple"
-    for key in kargs:
-        arg_list.append(f"--{key}" if append_hyphens else key)
     return arg_list

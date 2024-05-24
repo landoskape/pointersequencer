@@ -398,7 +398,7 @@ class Experiment(ABC):
         # Handle checkpointing parameters (only used for training)
         if train:
             parameters["use_prev_ckpts"] = getattr(self.args, "use_prev_ckpts", False)
-            parameters["save_ckpts"] = getattr(self.args, "save_ckpts", False)
+            parameters["save_ckpts"] = getattr(self.args, "save_ckpts", False) and not self.args.nosave
             if parameters["save_ckpts"]:
                 parameters["uniq_ckpts"] = self.args.uniq_ckpts
                 parameters["freq_ckpts"] = self.args.freq_ckpts
