@@ -67,4 +67,38 @@ def check_similarity(d1, d2, name1="dict1", name2=None, compare_shapes=False, co
             check_similarity(d1[key], d2[key])
         else:
             assert type(d1[key]) == type(d2[key]), f"d1[{key}] and d2[{key}] do not match in their type"
-            print(f"found other type in {name1}: {key}, type={type(d1[key])}. Not checking for similarity with checkpoint.")
+            print(f"found other type in {name1}: {key}, type={type(d1[key]).__name__}. Not checking for additional similarity features.")
+
+
+def stack_results(*results, sublevel=0):
+    """
+    stack results from multiple results dictionaries into a single dictionary (in order)
+
+    will perform nested stacking if dictionaries are found within the results
+    only stacks tensors on 0th dimension!
+    """
+    for result in results:
+        assert isinstance(result, dict), "all arguments must be dictionaries"
+
+    reference = results[0].copy()
+    appending = results[1:]
+    for append_results in appending:
+        check_similarity(
+            reference,
+            append_results,
+            name1=f"results(level{sublevel})",
+            name2=f"appended_results(level{sublevel})",
+            compare_shapes=False,
+            compare_dims=True,
+        )
+
+    for append_results in appending:
+        for key in reference:
+            if isinstance(reference[key], torch.Tensor):
+                reference[key] = torch.cat([reference[key], append_results[key]], dim=0)
+            elif isinstance(reference[key], dict):
+                stack_results(reference[key], append_results[key], sublevel=sublevel + 1)
+            else:
+                print(f"skipping '{key}' in checkpoint results update (not a tensor or dictionary)")
+
+    return reference

@@ -109,17 +109,11 @@ class PointerArchitectureComparison(Experiment):
         # create networks
         nets, optimizers, prms = self.create_networks(input_dim, context_parameters)
 
-        # train networks
-        train_parameters = self.make_train_parameters(dataset)
-        train_results = train.train(nets, optimizers, dataset, **train_parameters)
+        # train and test networks
+        results = dataset.train_and_test(self, nets, optimizers, target_reward=True, do_training=True, do_testing=True)
 
-        # test networks
-        extra_parameters = dict(save_reward=True, return_target=True)
-        test_parameters = self.make_train_parameters(dataset, train=False, **extra_parameters)
-        test_results = train.test(nets, dataset, **test_parameters)
-
-        # make full results dictionary
-        results = dict(train_results=train_results, test_results=test_results, prms=prms)
+        # add parameters to results
+        results["prms"] = prms
 
         # return results and trained networks
         return results, nets

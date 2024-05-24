@@ -50,7 +50,8 @@ def train(nets, optimizers, dataset, **parameters):
     use_prev_ckpts = parameters.get("use_prev_ckpts", False)
     if use_prev_ckpts:
         path_ckpts = parameters.get("path_ckpts")  # required if use_prev_ckpts is True
-        checkpoint_path = get_checkpoint_path(path_ckpts)
+        prefix_ckpts = parameters.get("prefix_ckpts", None)
+        checkpoint_path = get_checkpoint_path(path_ckpts, prefix=prefix_ckpts)
         if checkpoint_path is not None:
             nets, optimizers, results, starting_epoch = load_checkpoint(nets, optimizers, results, parameters, device, checkpoint_path)
             print("resuming training from checkpoint on epoch", starting_epoch)
@@ -61,6 +62,7 @@ def train(nets, optimizers, dataset, **parameters):
         uniq_ckpts = parameters.get("uniq_ckpts", False)
         freq_ckpts = parameters.get("freq_ckpts", 1)
         path_ckpts = parameters.get("path_ckpts")  # required if save_ckpts is True
+        prefix_ckpts = parameters.get("prefix_ckpts", "")
 
     # prepare baseline networks if required
     if baseline:
@@ -170,7 +172,7 @@ def train(nets, optimizers, dataset, **parameters):
                 results,
                 parameters,
                 epoch,
-                make_checkpoint_path(path_ckpts, epoch, uniq_ckpts),
+                make_checkpoint_path(path_ckpts, epoch, uniq_ckpts, prefix=prefix_ckpts),
             )
 
     # return training data

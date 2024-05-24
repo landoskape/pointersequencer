@@ -55,11 +55,13 @@ def plot_train_test_results(exp, train_results, test_results, labels):
         "reward" in train_results and "reward" in test_results and train_results["reward"] is not None and test_results["reward"] is not None
     )
 
+    curriculum_epochs = train_results.get("curriculum_epochs", None)
+
     if plot_loss:
         train_mean, train_se = compute_stats_by_type(train_results["loss"], num_types, 1)
         test_mean, test_se = compute_stats_by_type(test_results["loss"].mean(dim=0), num_types, 0)
 
-        fig, ax = train_test_plot(train_mean, train_se, test_mean, test_se, labels, "loss", ylim=(0, None))
+        fig, ax = train_test_plot(train_mean, train_se, test_mean, test_se, labels, "loss", ylim=(0, None), curriculum_epochs=curriculum_epochs)
 
         exp.plot_ready("train_test_loss")
 
@@ -67,6 +69,6 @@ def plot_train_test_results(exp, train_results, test_results, labels):
         train_mean, train_se = compute_stats_by_type(train_results["reward"], num_types, 1)
         test_mean, test_se = compute_stats_by_type(test_results["reward"].mean(dim=0), num_types, 0)
 
-        fig, ax = train_test_plot(train_mean, train_se, test_mean, test_se, labels, "reward")
+        fig, ax = train_test_plot(train_mean, train_se, test_mean, test_se, labels, "reward", curriculum_epochs=curriculum_epochs)
 
         exp.plot_ready("train_test_reward")
