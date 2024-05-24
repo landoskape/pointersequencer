@@ -93,12 +93,12 @@ def train(nets, optimizers, dataset, **parameters):
         for opt in optimizers:
             opt.zero_grad()
 
-        scores, choices = forward_batch(nets, batch, max_possible_output, temperature.get_value(), thompson)
+        scores, choices = forward_batch(nets, batch, max_possible_output, temperature=temperature.get_value(), thompson=thompson)
 
         # get baseline choices if using them
         if baseline:
             with torch.no_grad():
-                bl_choices = forward_batch(bl_nets, batch, max_possible_output, bl_temperature, bl_thompson)[1]
+                bl_choices = forward_batch(bl_nets, batch, max_possible_output, temperature=bl_temperature, thompson=bl_thompson)[1]
 
         # get loss
         if get_loss:
@@ -218,7 +218,7 @@ def test(nets, dataset, **parameters):
         # generate a batch
         batch = dataset.generate_batch(**parameters)
 
-        scores, choices = forward_batch(nets, batch, max_possible_output, temperature.get_value(), thompson)
+        scores, choices = forward_batch(nets, batch, max_possible_output, temperature=temperature.get_value(), thompson=thompson)
 
         # get loss
         if get_loss:
