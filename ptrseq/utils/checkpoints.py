@@ -4,26 +4,30 @@ import torch
 from .wrangling import check_similarity
 
 
-def make_checkpoint_path(path_ckpt, epoch, uniq_ckpts):
+def make_checkpoint_path(path_ckpt, epoch, uniq_ckpts, prefix=None):
     """make checkpoint path unique for each epoch if requested"""
     # if unique, add the epoch to the checkpoint path
     if uniq_ckpts:
-        return path_ckpt / "checkpoints" / f"checkpoint_{epoch}.tar"
+        return path_ckpt / "checkpoints" / f"checkpoint_{prefix}_{epoch}.tar"
 
-    # otherwise just save a single checkpoint file
+    # otherwise just save a single checkpoint file (with possible prefix)
+    if prefix is not None:
+        return path_ckpt / f"checkpoint_{prefix}.tar"
+
     return path_ckpt / "checkpoint.tar"
 
 
-def get_checkpoint_path(path_ckpt, epoch=None):
+def get_checkpoint_path(path_ckpt, epoch=None, prefix=None):
     """get checkpoint path for loading or saving"""
     # if epoch is provided, search for the specific checkpoint requested
-    if epoch is not None:
-        path = make_checkpoint_path(path_ckpt, epoch, True)
+    if epoch is not None or prefix is not None:
+        # this way the user is asking for a specific checkpoint
+        path = make_checkpoint_path(path_ckpt, epoch, epoch is not None, prefix=prefix)
         if path.exists():
             return path
 
     # search for latest unique checkpoint
-    prev_checkpoints = list((path_ckpt / "checkpoints").glob("checkpoint_*"))
+    prev_checkpoints = list((path_ckpt / "checkpoints").glob("checkpoint_*.tar"))
     single_checkpoint = path_ckpt / "checkpoint.tar"
 
     # if unique checkpoints found, return the latest one (with a warning if non-unique checkpoint also exists)
