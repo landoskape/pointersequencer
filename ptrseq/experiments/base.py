@@ -241,7 +241,7 @@ class Experiment(ABC):
         """Method for loading path to network checkpoint file directory"""
         return self.get_dir()
 
-    def _update_args(self, prms):
+    def _update_args(self, prms, verbose=False):
         """Method for updating arguments from saved parameter dictionary"""
         # First check if saved parameters contain unknown keys
         if prms.keys() > vars(self.args).keys():
@@ -252,7 +252,8 @@ class Experiment(ABC):
             if ak in self.meta_args:
                 continue  # don't update meta arguments
             if ak in prms and prms[ak] != vars(self.args)[ak]:
-                print(f"Requested argument {ak}={vars(self.args)[ak]} differs from saved, which is: {ak}={prms[ak]}. Using saved...")
+                if verbose:
+                    print(f"Requested argument {ak}={vars(self.args)[ak]} differs from saved, which is: {ak}={prms[ak]}. Using saved...")
                 setattr(self.args, ak, prms[ak])
 
     def save_repo(self, ignore_docs=True, verbose=False):
@@ -269,7 +270,7 @@ class Experiment(ABC):
         # Save experiment results
         torch.save(results, self.get_results_path())
 
-    def load_experiment(self, no_results=False):
+    def load_experiment(self, no_results=False, verbose=False):
         """Method for loading saved experiment parameters and results"""
         # Check if prms path is there
         if not self.get_prms_path().exists():
@@ -281,7 +282,7 @@ class Experiment(ABC):
 
         # Load parameters into object
         prms = torch.load(self.get_prms_path())
-        self._update_args(prms)
+        self._update_args(prms, verbose=verbose)
 
         # Don't load results if requested
         if no_results:

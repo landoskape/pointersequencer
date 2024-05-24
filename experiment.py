@@ -34,7 +34,7 @@ if __name__ == "__main__":
     else:
         # Load saved experiment (parameters and results)
         print("Loading saved experiment...")
-        results = exp.load_experiment()
+        results = exp.load_experiment(verbose=True)
 
         # Report saved experiment parameters
         exp.report(args=True)
