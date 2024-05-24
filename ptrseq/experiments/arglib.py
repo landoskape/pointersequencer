@@ -3,10 +3,8 @@ from ..utils import argbool
 
 def add_standard_training_parameters(parser):
     """arguments for defining the network type, dataset, optimizer, and other metaparameters"""
-    parser.add_argument("--task", type=str, required=True, help="which task to use (the dataset to load), required")
     parser.add_argument("--learning_mode", type=str, default="reinforce", help="which learning mode to use (default=reinforce)")
     parser.add_argument("--optimizer", type=str, default="Adam", help="what optimizer to train with (default=Adam)")
-    parser.add_argument("--batch_size", type=int, default=128, help="what batch size to pass to DataLoader")
     parser.add_argument("--train_epochs", type=int, default=2000, help="how many epochs to train the networks on")
     parser.add_argument("--test_epochs", type=int, default=100, help="how many epochs to train the networks on")
     parser.add_argument("--replicates", type=int, default=2, help="how many replicates of each network to train")
@@ -119,25 +117,22 @@ def add_pointernet_pointer_parameters(parser):
 
 
 def add_checkpointing(parser):
-    """
-    arguments for managing checkpointing when training networks
-
-    TODO: probably add some arguments for controlling the details of the checkpointing
-        : e.g. how often to checkpoint, etc.
-    """
+    """arguments for managing checkpointing when training networks"""
     parser.add_argument("--use_prev_ckpts", default=False, action="store_true", help="pick up training off previous checkpoint (default=False)")
     parser.add_argument("--save_ckpts", default=False, action="store_true", help="save checkpoints of models (default=False)")
     parser.add_argument("--uniq_ckpts", default=False, action="store_true", help="save unique checkpoints of models each epoch (default=False)")
     parser.add_argument("--freq_ckpts", default=1, type=int, help="frequency (by epoch) to save checkpoints of models (default=1)")
     parser.add_argument("--use_wandb", default=False, action="store_true", help="log experiment to WandB (default=False)")
-
     return parser
 
 
 def add_dataset_parameters(parser):
     """add generic dataset parameters"""
+    parser.add_argument("--task", type=str, required=True, help="which task to use (the dataset to load), required")
+    parser.add_argument("--batch_size", type=int, default=128, help="what batch size to pass to DataLoader")
     parser.add_argument("--threads", type=int, default=1, help="the number of threads to use for generating batches (default=1)")
     parser.add_argument("--ignore_index", type=int, default=-100, help="the index to ignore in the loss function (default=-100)")
+    parser.add_argument("--use_curriculum", type=argbool, default=False, help="use curriculum training (default=False)")
     return parser
 
 

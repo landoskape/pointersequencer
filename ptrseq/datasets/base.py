@@ -3,6 +3,7 @@ from copy import copy
 import torch
 
 from ..utils import PersistentPool
+from ..train import train, test
 
 
 class RequiredParameter:
@@ -76,6 +77,56 @@ class Dataset(ABC):
         prms_to_use.update(prms)
         # return to caller function
         return prms_to_use
+
+    def train_and_test(self, exp, nets, optimizers, target_reward=True, do_training=True, do_testing=True):
+        """
+        run training and testing for the dataset, optionally with a requested curriculum (using exp.args)
+
+        args:
+            exp: Experiment, the experiment object
+            nets: list of torch.nn.Module, the networks to train
+            optimizers: list of torch.optim.Optimizer, the optimizers for the networks
+            target_reward: bool, whether to return the target reward during testing
+            do_training: bool, whether to train the networks
+            do_testing: bool, whether to test the networks
+
+        returns:
+            dict, contains train_results (dict) and test_results (dict) for the dataset
+        """
+        # check if curriculum training is required
+        if self._check_curriculum_training(exp):
+            return self._run_curriculum(exp, nets, optimizers, target_reward, do_training, do_testing)
+
+        # otherwise, run standard training and testing
+        results = {}
+
+        if do_training:
+            results["train_results"] = self._train(exp, nets, optimizers)
+
+        if do_testing:
+            results["test_results"] = self._test(exp, nets, target_reward=target_reward)
+
+        return results
+
+    def _train(self, exp, nets, optimizers, prefix_ckpts=None):
+        """train networks for this datasets"""
+        train_parameters = exp.make_train_parameters(self)
+        train_parameters["prefix_ckpts"] = prefix_ckpts
+        return train(nets, optimizers, self, **train_parameters)
+
+    def _test(self, exp, nets, target_reward=True):
+        """test networks for this dataset"""
+        extra_parameters = dict(save_reward=True, return_target=True) if target_reward else {}
+        test_parameters = exp.make_train_parameters(self, train=False, **extra_parameters)
+        return test(nets, self, **test_parameters)
+
+    def _check_curriculum_training(self, exp):
+        """returns True if curriculum training is requested for this dataset, otherwise False"""
+        return hasattr(exp.args, "use_curriculum") and exp.args.use_curriculum
+
+    def _run_curriculum(self, *args, **kwargs):
+        """overwrite this method to implement curriculum training for particular datasets"""
+        raise NotImplementedError("Curriculum training was requested, but is not implemented for this dataset.")
 
     def create_persistent_pool(self, threads):
         """create a persistent pool for the dataset"""

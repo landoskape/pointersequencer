@@ -5,7 +5,7 @@ import torch
 
 
 from .support import get_dominoes, get_best_line, pad_best_lines
-from ..utils import named_transpose, process_arguments
+from ..utils import named_transpose, process_arguments, stack_results
 from .base import Dataset, DatasetSL, DatasetRL, RequiredParameter
 
 
@@ -819,6 +819,33 @@ class DominoeSequencer(DominoeMaster, DatasetSL, DatasetRL):
         DatasetSL.__init__(self)
         DatasetRL.__init__(self)
 
+    # otherwise, run standard training and testing
+    def _run_curriculum(self, exp, nets, optimizers, target_reward=True, do_training=True, do_testing=True):
+        results = {}
+
+        # train networks
+        if do_training:
+            results["curriculum_epochs"] = [exp.args.train_epochs, exp.args.train_epochs, exp.args.train_epochs]
+
+            self.prms["randomize_direction"] = False
+            train_results_phase0 = self._train(exp, nets, optimizers, prefix_ckpts="phase0")
+
+            self.prms["randomize_direction"] = True
+            train_results_phase1 = self._train(exp, nets, optimizers, prefix_ckpts="phase1")
+
+            self.prms["value_method"] = "dominoe"
+            self.prms["value_multiplier"] = 1 / self.prms["highest_dominoe"]  # will make range of rewards 0 to 2
+            train_results_phase2 = self._train(exp, nets, optimizers, prefix_ckpts="phase2")
+
+            results["train_results"] = stack_results(train_results_phase0, train_results_phase1, train_results_phase2)
+
+        if do_testing:
+            final_curriculum_state = dict(randomize_direction=True, value_method="dominoe", value_multiplier=1 / self.prms["highest_dominoe"])
+            self.prms.update(final_curriculum_state)
+            results["test_results"] = self._test(exp, nets, target_reward=target_reward)
+
+        return results
+
 
 class DominoeSorter(DominoeMaster, DatasetSL, DatasetRL):
     task = "sorting"
@@ -827,6 +854,29 @@ class DominoeSorter(DominoeMaster, DatasetSL, DatasetRL):
         DominoeMaster.__init__(self, self.task, *args, **kwargs)
         DatasetSL.__init__(self)
         DatasetRL.__init__(self)
+
+    # otherwise, run standard training and testing
+    def _run_curriculum(self, exp, nets, optimizers, target_reward=True, do_training=True, do_testing=True):
+        results = {}
+
+        # train networks
+        if do_training:
+            results["curriculum_epochs"] = [exp.args.train_epochs, exp.args.train_epochs]
+
+            self.prms["randomize_direction"] = False
+            train_results_phase0 = self._train(exp, nets, optimizers, prefix_ckpts="phase0")
+
+            self.prms["randomize_direction"] = True
+            train_results_phase1 = self._train(exp, nets, optimizers, prefix_ckpts="phase1")
+
+            results["train_results"] = stack_results(train_results_phase0, train_results_phase1)
+
+        if do_testing:
+            final_curriculum_state = dict(randomize_direction=True)
+            self.prms.update(final_curriculum_state)
+            results["test_results"] = self._test(exp, nets, target_reward=target_reward)
+
+        return results
 
 
 class DominoeDataset(DominoeMaster):

@@ -154,7 +154,6 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
         batch.update(prms)
 
         if prms["return_target"]:
-
             batch["target"] = self.input_to_device(self.get_paths(input, dists, init, prms["threads"]), device=device)
 
         return batch
