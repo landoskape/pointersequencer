@@ -182,9 +182,12 @@ def add_dataset_parameters(parser):
     parser.add_argument("--threads", type=int, default=1, help="the number of threads to use for generating batches (default=1)")
     parser.add_argument("--ignore_index", type=int, default=-100, help="the index to ignore in the loss function (default=-100)")
     parser.add_argument("--use_curriculum", type=argbool, default=False, help="use curriculum training (default=False)")
+
+    # conditional parameters for each task
+    is_dominoe_task = lambda x: x in ["dominoe_sequencer", "dominoe_sorter"]
     parser.add_conditional_argument(
         "task",
-        lambda x: x in ["dominoe", "dominoe_sequencer", "dominoe_sorting"],
+        is_dominoe_task,
         "--highest_dominoe",
         type=int,
         default=9,
@@ -192,7 +195,7 @@ def add_dataset_parameters(parser):
     )
     parser.add_conditional_argument(
         "task",
-        lambda x: x in ["dominoe_sequencer", "dominoe_sorter"],
+        is_dominoe_task,
         "--train_fraction",
         type=float,
         default=0.9,
@@ -200,7 +203,7 @@ def add_dataset_parameters(parser):
     )
     parser.add_conditional_argument(
         "task",
-        lambda x: x in ["dominoe_sequencer", "dominoe_sorter"],
+        is_dominoe_task,
         "--hand_size",
         type=int,
         default=12,
@@ -208,7 +211,7 @@ def add_dataset_parameters(parser):
     )
     parser.add_conditional_argument(
         "task",
-        lambda x: x in ["dominoe_sequencer", "dominoe_sorter"],
+        is_dominoe_task,
         "--randomize_direction",
         type=argbool,
         default=True,
