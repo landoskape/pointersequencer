@@ -27,11 +27,46 @@ def add_network_training_metaparameters(parser):
     )
     parser.add_argument("--thompson", type=argbool, default=True, help="whether to use Thompson sampling during training (default=True)")
     parser.add_argument("--baseline", type=argbool, default=True, help="whether to use a baseline correction during training (default=True)")
-    parser.add_argument("--bl_temperature", type=float, default=1.0, help="temperature for baseline networks during training")
-    parser.add_argument("--bl_thompson", type=argbool, default=False, help="whether to use Thompson sampling for baseline networks (default=False)")
-    parser.add_argument("--bl_significance", type=float, default=0.05, help="significance level for updating baseline networks (default=0.05)")
-    parser.add_argument("--bl_batch_size", type=int, default=256, help="batch size for baseline networks (default=256)")
-    parser.add_argument("--bl_frequency", type=int, default=10, help="how many epochs to wait before checking baseline improvement (default=10)")
+    parser.add_contional_argument(
+        "baseline",
+        True,
+        "--bl_temperature",
+        type=float,
+        default=1.0,
+        help="temperature for baseline networks during training (default=1.0)",
+    )
+    parser.add_contional_argument(
+        "baseline",
+        True,
+        "--bl_thompson",
+        type=argbool,
+        default=False,
+        help="whether to use Thompson sampling for baseline networks (default=False)",
+    )
+    parser.add_contional_argument(
+        "baseline",
+        True,
+        "--bl_significance",
+        type=float,
+        default=0.05,
+        help="significance level for updating baseline networks (default=0.05)",
+    )
+    parser.add_contional_argument(
+        "baseline",
+        True,
+        "--bl_batch_size",
+        type=int,
+        default=256,
+        help="batch size for baseline networks (default=256)",
+    )
+    parser.add_contional_argument(
+        "baseline",
+        True,
+        "--bl_frequency",
+        type=int,
+        default=10,
+        help="how many epochs to wait before checking baseline improvement (default=10)",
+    )
     return parser
 
 
@@ -120,8 +155,22 @@ def add_checkpointing(parser):
     """arguments for managing checkpointing when training networks"""
     parser.add_argument("--use_prev_ckpts", default=False, action="store_true", help="pick up training off previous checkpoint (default=False)")
     parser.add_argument("--save_ckpts", default=False, action="store_true", help="save checkpoints of models (default=False)")
-    parser.add_argument("--uniq_ckpts", default=False, action="store_true", help="save unique checkpoints of models each epoch (default=False)")
-    parser.add_argument("--freq_ckpts", default=1, type=int, help="frequency (by epoch) to save checkpoints of models (default=1)")
+    parser.add_conditional_argument(
+        "save_ckpts",
+        True,
+        "--uniq_ckpts",
+        default=False,
+        action="store_true",
+        help="save unique checkpoints of models each epoch (default=False)",
+    )
+    parser.add_conditional_argument(
+        "save_ckpts",
+        True,
+        "--freq_ckpts",
+        default=1,
+        type=int,
+        help="frequency (by epoch) to save checkpoints of models (default=1)",
+    )
     parser.add_argument("--use_wandb", default=False, action="store_true", help="log experiment to WandB (default=False)")
     return parser
 
@@ -133,37 +182,76 @@ def add_dataset_parameters(parser):
     parser.add_argument("--threads", type=int, default=1, help="the number of threads to use for generating batches (default=1)")
     parser.add_argument("--ignore_index", type=int, default=-100, help="the index to ignore in the loss function (default=-100)")
     parser.add_argument("--use_curriculum", type=argbool, default=False, help="use curriculum training (default=False)")
-    return parser
-
-
-def add_tsp_parameters(parser):
-    """
-    arguments for the traveling salesman problem
-    """
-    parser.add_argument("--num_cities", type=int, default=10, help="the number of cities in the TSP (default=10)")
-    parser.add_argument("--coord_dims", type=int, default=2, help="the number of dimensions for the coordinates (default=2)")
-    return parser
-
-
-def add_dominoe_parameters(parser):
-    """
-    arguments for any dominoe task
-    """
-    parser.add_argument("--highest_dominoe", type=int, default=9, help="the highest dominoe value (default=9)")
-    parser.add_argument("--train_fraction", type=float, default=0.9, help="the fraction of dominoes to train with (default=0.9)")
-    parser.add_argument("--hand_size", type=int, default=12, help="the number of dominoes in the hand (default=12)")
-    parser.add_argument("--randomize_direction", type=argbool, default=True, help="randomize the direction of the dominoes (default=True)")
-    return parser
-
-
-def add_dominoe_sequencer_parameters(parser):
-    """arguments for the dominoe sequencer task"""
-    parser.add_argument("--value_method", type=str, default="length", help="how to calculate the value of a sequence (default=length)")
-    parser.add_argument("--value_multiplier", type=float, default=1.0, help="how to scale the value of a sequence (default=1.0)")
-    return parser
-
-
-def add_dominoe_sorting_parameters(parser):
-    """arguments for the dominoe sorting task"""
-    parser.add_argument("--allow_mistakes", type=argbool, default=False, help="allow mistakes in the sorting task (default=False)")
+    parser.add_conditional_argument(
+        "task",
+        lambda x: x in ["dominoe", "dominoe_sequencer", "dominoe_sorting"],
+        "--highest_dominoe",
+        type=int,
+        default=9,
+        help="the highest dominoe value (default=9)",
+    )
+    parser.add_conditional_argument(
+        "task",
+        lambda x: x in ["dominoe_sequencer", "dominoe_sorter"],
+        "--train_fraction",
+        type=float,
+        default=0.9,
+        help="the fraction of dominoes to train with (default=0.9)",
+    )
+    parser.add_conditional_argument(
+        "task",
+        lambda x: x in ["dominoe_sequencer", "dominoe_sorter"],
+        "--hand_size",
+        type=int,
+        default=12,
+        help="the number of dominoes in the hand (default=12)",
+    )
+    parser.add_conditional_argument(
+        "task",
+        lambda x: x in ["dominoe_sequencer", "dominoe_sorter"],
+        "--randomize_direction",
+        type=argbool,
+        default=True,
+        help="randomize the direction of the dominoes (default=True)",
+    )
+    parser.add_conditional_argument(
+        "task",
+        "dominoe_sequencer",
+        "--value_method",
+        type=str,
+        default="length",
+        help="how to calculate the value of a sequence (default=length)",
+    )
+    parser.add_conditional_argument(
+        "task",
+        "dominoe_sequencer",
+        "--value_multiplier",
+        type=float,
+        default=1.0,
+        help="how to scale the value of a sequence (default=1.0)",
+    )
+    parser.add_conditional_argument(
+        "task",
+        "dominoe_sorter",
+        "--allow_mistakes",
+        type=argbool,
+        default=False,
+        help="allow mistakes in the sorting task (default=False)",
+    )
+    parser.add_conditional_argument(
+        "task",
+        "tsp",
+        "--num_cities",
+        type=int,
+        default=10,
+        help="the number of cities in the TSP (default=10)",
+    )
+    parser.add_conditional_argument(
+        "task",
+        "tsp",
+        "--coord_dims",
+        type=int,
+        default=2,
+        help="the number of dimensions for the coordinates (default=2)",
+    )
     return parser

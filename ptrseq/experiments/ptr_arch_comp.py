@@ -38,10 +38,10 @@ class PointerArchitectureComparison(Experiment):
         parser = arglib.add_pointernet_pointer_parameters(parser)
         parser = arglib.add_checkpointing(parser)
         parser = arglib.add_dataset_parameters(parser)
-        parser = arglib.add_tsp_parameters(parser)
-        parser = arglib.add_dominoe_parameters(parser)
-        parser = arglib.add_dominoe_sequencer_parameters(parser)
-        parser = arglib.add_dominoe_sorting_parameters(parser)
+        # parser = arglib.add_tsp_parameters(parser)
+        # parser = arglib.add_dominoe_parameters(parser)
+        # parser = arglib.add_dominoe_sequencer_parameters(parser)
+        # parser = arglib.add_dominoe_sorting_parameters(parser)
         return parser
 
     def pointer_methods(self):
