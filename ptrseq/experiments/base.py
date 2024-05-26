@@ -1,6 +1,5 @@
 import os
 from abc import ABC, abstractmethod
-from argparse import ArgumentParser
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -13,7 +12,7 @@ from matplotlib import pyplot as plt
 
 from .. import files as files
 from ..datasets import get_dataset
-from ..utils import get_scheduler, scheduler_from_parser
+from ..utils import get_scheduler, scheduler_from_parser, ConditionalArgumentParser
 
 
 class Experiment(ABC):
@@ -145,7 +144,7 @@ class Experiment(ABC):
         specific to each experiment.
         """
         self.meta_args = []  # a list of arguments that shouldn't be updated when loading an old experiment
-        parser = ArgumentParser(description=f"arguments for {self.basename}")
+        parser = ConditionalArgumentParser(description=f"arguments for {self.basename}")
         parser = self.make_args(parser)
 
         # saving and new experiment loading parameters
@@ -214,7 +213,7 @@ class Experiment(ABC):
             assert self.args.timestamp is not None, "if use_timestamp=True and plotting stored results, must provide a timestamp"
 
     @abstractmethod
-    def make_args(self, parser) -> ArgumentParser:
+    def make_args(self, parser) -> ConditionalArgumentParser:
         """
         Required method for defining special-case arguments.
 
