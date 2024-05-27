@@ -21,13 +21,18 @@ class ConditionalArgumentParser(ArgumentParser):
 
     def parse_args(self, args=None, namespace=None):
         """Parse the arguments and return the namespace."""
+        # if args not provided, use sys.argv
         if args is None:
             args = sys.argv[1:]
 
-        _parser = deepcopy(self)
+        # make a list of booleans to track which conditionals have been added
         already_added = [False for _ in range(self._num_conditional)]
+
+        # prepare the conditionals in a dummy parser so the user can reuse self
+        _parser = deepcopy(self)
         _parser = self._prepare_conditionals(_parser, args, already_added)
 
+        # parse the arguments with the conditionals added in the dummy parser
         return ArgumentParser.parse_args(_parser, args=args, namespace=namespace)
 
     def add_conditional(self, dest, func_match, *args, **kwargs):
