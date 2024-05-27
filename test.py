@@ -6,7 +6,7 @@ def main():
     parser = ConditionalArgumentParser(description="Task-based argument parser example.")
     parser.add_argument("task", type=str, help="The task to run.")
     parser.add_argument("--use_curriculum", type=argbool, default=False)
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "task",
         "dominoe",
         "--learning_mode",
@@ -14,7 +14,7 @@ def main():
         default="supervised",
         help="The learning mode to use.",
     )
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "task",
         "dominoe",
         "--randomize_direction",
@@ -23,7 +23,7 @@ def main():
         help="whether to use random dominoe directions.",
     )
 
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "use_curriculum",
         True,
         "--curriculum",
@@ -32,7 +32,7 @@ def main():
         help="Which curriculum to use",
     )
 
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "curriculum",
         "nonstandard",
         "--curriculum_path",
