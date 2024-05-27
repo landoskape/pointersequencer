@@ -368,7 +368,7 @@ class Experiment(ABC):
         if train:
             parameters["learning_mode"] = getattr(self.args, "learning_mode")
         parameters["max_possible_output"] = dataset.get_max_possible_output()
-        parameters["gamma"] = getattr(self.args, "gamma", 1.0)
+        parameters["reward_gamma"] = getattr(self.args, "reward_gamma", 1.0)
 
         # handle network state parameters -- temperature should be scheduled for training and 1.0 always for testing
         parameters["thompson"] = getattr(self.args, "thompson", True) if train else False

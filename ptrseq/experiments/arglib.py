@@ -18,7 +18,7 @@ def add_network_training_metaparameters(parser):
     """arguments for determining default network & training metaparameters"""
     parser.add_argument("--lr", type=float, default=1e-4, help="default learning rate (default=1e-4)")
     parser.add_argument("--wd", type=float, default=0, help="default weight decay (default=0)")
-    parser.add_argument("--gamma", type=float, default=1.0, help="default gamma for reward processing (default=1.0)")
+    parser.add_argument("--reward_gamma", type=float, default=1.0, help="default gamma for reward processing (default=1.0)")
     parser.add_argument(
         "--train_temperature",
         type=float,
@@ -261,7 +261,6 @@ def add_dataset_parameters(parser):
     parser.add_argument("--batch_size", type=int, default=128, help="what batch size to pass to DataLoader")
     parser.add_argument("--threads", type=int, default=1, help="the number of threads to use for generating batches (default=1)")
     parser.add_argument("--ignore_index", type=int, default=-100, help="the index to ignore in the loss function (default=-100)")
-    parser.add_argument("--use_curriculum", type=argbool, default=False, help="use curriculum training (default=False)")
 
     # conditional parameters for each task
     is_dominoe_task = lambda x: x in ["dominoe_sequencer", "dominoe_sorter"]
@@ -336,5 +335,17 @@ def add_dataset_parameters(parser):
         type=int,
         default=2,
         help="the number of dimensions for the coordinates (default=2)",
+    )
+
+    # add curriculum related arguments
+    parser.add_argument("--use_curriculum", type=argbool, default=False, help="use curriculum training (default=False)")
+    parser.add_conditional(
+        "use_curriculum",
+        True,
+        "--curriculum_epochs",
+        type=int,
+        nargs="*",
+        default=[1000, 1000],
+        help="how many epochs to train with curriculum (default=[1000, 1000])",
     )
     return parser

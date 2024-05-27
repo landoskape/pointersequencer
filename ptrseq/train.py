@@ -25,7 +25,7 @@ def train(nets, optimizers, dataset, **parameters):
 
     # create gamma transform for processing reward if not provided in parameters
     if learning_mode == "reinforce":
-        gamma = parameters.get("gamma")
+        gamma = parameters.get("reward_gamma")
         gamma_transform = dataset.create_gamma_transform(max_possible_output, gamma, device=device)
 
     # process the learning_mode and save conditions
