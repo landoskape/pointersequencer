@@ -33,15 +33,8 @@ class PointerArchitectureComparison(Experiment):
         parser = arglib.add_scheduling_parameters(parser, "lr")
         parser = arglib.add_scheduling_parameters(parser, "train_temperature")
         parser = arglib.add_pointernet_parameters(parser)
-        parser = arglib.add_pointernet_encoder_parameters(parser)
-        parser = arglib.add_pointernet_decoder_parameters(parser)
-        parser = arglib.add_pointernet_pointer_parameters(parser)
         parser = arglib.add_checkpointing(parser)
         parser = arglib.add_dataset_parameters(parser)
-        # parser = arglib.add_tsp_parameters(parser)
-        # parser = arglib.add_dominoe_parameters(parser)
-        # parser = arglib.add_dominoe_sequencer_parameters(parser)
-        # parser = arglib.add_dominoe_sorting_parameters(parser)
         return parser
 
     def pointer_methods(self):

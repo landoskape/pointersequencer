@@ -72,82 +72,127 @@ def add_network_training_metaparameters(parser):
 
 def add_scheduling_parameters(parser, name="lr"):
     """arguments for scheduling a value based on the name given"""
+    # check if it's a permitted parameter (based on how schedulers are used in train.train)
     permitted_parameters = ["lr", "train_temperature"]
     if name not in permitted_parameters:
         raise ValueError(f"parameter '{name}' not in permitted parameters: {permitted_parameters}")
-    parser.add_argument(f"--{name}_scheduler", type=str, default="constant", help=f"which scheduler to use for {name} (default=constant)")
-    parser.add_argument(f"--{name}_step_size", type=int, help=f"step size for the StepScheduler for {name} (default=None)")
-    parser.add_argument(f"--{name}_gamma", type=float, help=f"gamma for the Step/ExponentialScheduler for {name} (default=None)")
-    parser.add_argument(
-        f"--{name}_initial_value",
-        type=float,
-        default=None,
-        help=f"initial value for the LinearScheduler for {name} (default=None, required when using LinearScheduler!)",
-    )
-    parser.add_argument(
-        f"--{name}_negative_clip",
-        type=argbool,
-        default=True,
-        help=f"whether to clip the value to be the initial value for negative epochs for {name} schedulers (default=True)",
-    )
-    parser.add_argument(
-        f"--{name}_final_value",
-        type=float,
-        default=None,
-        help=f"final value for the LinearScheduler for {name} (default=None, required when using LinearScheduler!)",
-    )
-    parser.add_argument(
-        f"--{name}_total_epochs",
+
+    # helper function to create parameter names (used many times in parser.add_conditional)
+    _prm = lambda prm: f"--{name}_{prm}"
+    use_name = _prm("use_scheduler")
+
+    # add "{name}_use_scheduler" to determine whether to use a scheduler for this parameter
+    parser.add_argument(use_name, type=argbool, default=False, help=f"whether to use a scheduler for {name} (default=False)")
+
+    # add conditional argument for determining which scheduler to use and initial value / negative_clip (required by all)
+    parser.add_conditional(use_name, True, _prm("scheduler"), type=str, default="constant", help=f"which scheduler to use (default=constant)")
+    parser.add_conditional(use_name, True, _prm("initial_value"), type=float, default=None, help=f"initial value for the Scheduler (default=None)")
+    parser.add_conditional(use_name, True, _prm("negative_clip"), type=argbool, default=True, help=f"ignore negative epochs (default=True)")
+
+    # add scheduler-specific conditional parameters
+    parser.add_conditional(
+        _prm("scheduler"),
+        "step",
+        _prm("step_size"),
         type=int,
-        default=None,
-        help=f"total epochs for the LinearScheduler for {name} (default=None, required when using LinearScheduler!)",
+        required=True,
+        help=f"step size for the StepScheduler (required)",
+    )
+    parser.add_conditional(
+        _prm("scheduler"),
+        lambda val: val in ["step", "exp", "expbase"],
+        _prm("gamma"),
+        type=float,
+        required=True,
+        help=f"gamma for the scheduler (required)",
+    )
+    parser.add_conditional(
+        _prm("scheduler"),
+        lambda val: val in ["expbase", "linear"],
+        _prm("final_value"),
+        type=float,
+        required=True,
+        help=f"final_value for the scheduler (required)",
+    )
+    parser.add_conditional(
+        _prm("scheduler"),
+        "linear",
+        _prm("total_epochs"),
+        type=int,
+        required=True,
+        help=f"total_epochs for the (required)",
+    )
+    return parser
+
+
+def _add_transformer_parameters(parser, name, num_heads=8, kqnorm=True, expansion=1, kqv_bias=False, mlp_bias=True, residual=True):
+    """add conditional parameters for a transformer layer"""
+    _prm = lambda prm: f"--{name}_{prm}"
+    _in_both = lambda val: val in ["attention", "transformer"]
+    parser.add_conditional(
+        _prm("method"), _in_both, _prm("num_heads"), type=int, default=num_heads, help=f"the number of heads in {name} layers (default={num_heads})"
+    )
+    parser.add_conditional(
+        _prm("method"), _in_both, _prm("kqnorm"), type=argbool, default=kqnorm, help=f"whether to use kqnorm in the {name} (default={kqnorm})"
+    )
+    parser.add_conditional(
+        _prm("method"),
+        "transformer",
+        _prm("expansion"),
+        type=int,
+        default=expansion,
+        help=f"the expansion of the FF layers in the {name} (default={expansion})",
+    )
+    parser.add_conditional(
+        _prm("method"),
+        _in_both,
+        _prm("kqv_bias"),
+        type=argbool,
+        default=kqv_bias,
+        help=f"whether to use bias in the attention kqv layers (default={kqv_bias})",
+    )
+    parser.add_conditional(
+        _prm("method"),
+        "transformer",
+        _prm("mlp_bias"),
+        type=argbool,
+        default=mlp_bias,
+        help=f"use bias in the MLP part of the {name} (default={mlp_bias})",
+    )
+    parser.add_conditional(
+        _prm("method"),
+        "attention",
+        _prm("residual"),
+        type=argbool,
+        default=residual,
+        help=f"use residual connections in the attentional {name} (default={residual})",
     )
     return parser
 
 
 def add_pointernet_parameters(parser):
-    """arguments for the PointerNet"""
+    """arguments for the PointerNet including conditionals for encoder/decoder/pointer layer methods"""
     parser.add_argument("--embedding_dim", type=int, default=128, help="the dimensions of the embedding (default=128)")
     parser.add_argument("--embedding_bias", type=argbool, default=True, help="whether to use embedding_bias (default=True)")
     parser.add_argument("--num_encoding_layers", type=int, default=1, help="the number of encoding layers in the PointerNet (default=1)")
     parser.add_argument("--encoder_method", type=str, default="transformer", help="PointerNet encoding layer method (default='transformer')")
+    parser = _add_transformer_parameters(parser, "encoder")
     parser.add_argument("--decoder_method", type=str, default="transformer", help="PointerNet decoding layer method (default='transformer')")
+    parser = _add_transformer_parameters(parser, "decoder")
+    parser.add_conditional(
+        "decoder_method", "gru", "--decoder_gru_bias", type=argbool, default=True, help="whether to use bias in the gru decoder method (default=True)"
+    )
     parser.add_argument("--pointer_method", type=str, default="standard", help="PointerNet pointer layer method (default='standard')")
-    return parser
-
-
-def add_pointernet_encoder_parameters(parser):
-    """arguments for the encoder layers in a PointerNet"""
-    parser.add_argument("--encoder_num_heads", type=int, default=8, help="the number of heads in ptrnet encoding layers (default=8)")
-    parser.add_argument("--encoder_kqnorm", type=argbool, default=True, help="whether to use kqnorm in the encoder (default=True)")
-    parser.add_argument("--encoder_expansion", type=int, default=1, help="the expansion of the FF layers in the encoder (default=1)")
-    parser.add_argument("--encoder_kqv_bias", type=argbool, default=False, help="whether to use bias in the attention kqv layers (default=False)")
-    parser.add_argument("--encoder_mlp_bias", type=argbool, default=True, help="use bias in the MLP part of transformer encoders (default=True)")
-    parser.add_argument("--encoder_residual", type=argbool, default=True, help="use residual connections in the attentional encoders (default=True)")
-    return parser
-
-
-def add_pointernet_decoder_parameters(parser):
-    """arguments for the decoder layers in a PointerNet"""
-    parser.add_argument("--decoder_num_heads", type=int, default=8, help="the number of heads in ptrnet decoding layers (default=8)")
-    parser.add_argument("--decoder_kqnorm", type=argbool, default=True, help="whether to use kqnorm in the decoder (default=True)")
-    parser.add_argument("--decoder_expansion", type=int, default=1, help="the expansion of the FF layers in the decoder (default=1)")
-    parser.add_argument("--decoder_gru_bias", type=argbool, default=True, help="whether to use bias in the gru decoder method (default=True)")
-    parser.add_argument("--decoder_kqv_bias", type=argbool, default=False, help="whether to use bias in the attention layer (default=False)")
-    parser.add_argument("--decoder_mlp_bias", type=argbool, default=True, help="use bias in the MLP part of transformer decoders (default=True)")
-    parser.add_argument("--decoder_residual", type=argbool, default=True, help="use residual connections in the attentional decoders (default=True)")
-    return parser
-
-
-def add_pointernet_pointer_parameters(parser):
-    """arguments for the pointer layer in a PointerNet"""
-    parser.add_argument("--pointer_num_heads", type=int, default=8, help="the number of heads in ptrnet decoding layers (default=8)")
-    parser.add_argument("--pointer_kqnorm", type=argbool, default=True, help="whether to use kqnorm in the decoder (default=True)")
-    parser.add_argument("--pointer_expansion", type=int, default=1, help="the expansion of the FF layers in the decoder (default=1)")
-    parser.add_argument("--pointer_bias", type=argbool, default=False, help="whether to use bias in pointer projection layers (default=False)")
-    parser.add_argument("--pointer_kqv_bias", type=argbool, default=False, help="use bias in the attention layer of pointers (default=True)")
-    parser.add_argument("--pointer_mlp_bias", type=argbool, default=True, help="use bias in the MLP part of transformer pointers (default=True)")
-    parser.add_argument("--pointer_residual", type=argbool, default=True, help="use residual connections in the attentional pointer (default=True)")
+    parser = _add_transformer_parameters(parser, "pointer")
+    _bias_required = lambda val: val in ["standard", "dot", "dot_noln"]
+    parser.add_conditional(
+        "pointer_method",
+        _bias_required,
+        "--pointer_bias",
+        type=argbool,
+        default=False,
+        help="whether to use bias in pointer projection layers (default=False)",
+    )
     return parser
 
 
@@ -155,7 +200,7 @@ def add_checkpointing(parser):
     """arguments for managing checkpointing when training networks"""
     parser.add_argument("--use_prev_ckpts", default=False, action="store_true", help="pick up training off previous checkpoint (default=False)")
     parser.add_argument("--save_ckpts", default=False, action="store_true", help="save checkpoints of models (default=False)")
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "save_ckpts",
         True,
         "--uniq_ckpts",
@@ -163,7 +208,7 @@ def add_checkpointing(parser):
         action="store_true",
         help="save unique checkpoints of models each epoch (default=False)",
     )
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "save_ckpts",
         True,
         "--freq_ckpts",
@@ -185,7 +230,7 @@ def add_dataset_parameters(parser):
 
     # conditional parameters for each task
     is_dominoe_task = lambda x: x in ["dominoe_sequencer", "dominoe_sorter"]
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "task",
         is_dominoe_task,
         "--highest_dominoe",
@@ -193,7 +238,7 @@ def add_dataset_parameters(parser):
         default=9,
         help="the highest dominoe value (default=9)",
     )
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "task",
         is_dominoe_task,
         "--train_fraction",
@@ -201,7 +246,7 @@ def add_dataset_parameters(parser):
         default=0.9,
         help="the fraction of dominoes to train with (default=0.9)",
     )
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "task",
         is_dominoe_task,
         "--hand_size",
@@ -209,7 +254,7 @@ def add_dataset_parameters(parser):
         default=12,
         help="the number of dominoes in the hand (default=12)",
     )
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "task",
         is_dominoe_task,
         "--randomize_direction",
@@ -217,7 +262,7 @@ def add_dataset_parameters(parser):
         default=True,
         help="randomize the direction of the dominoes (default=True)",
     )
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "task",
         "dominoe_sequencer",
         "--value_method",
@@ -225,7 +270,7 @@ def add_dataset_parameters(parser):
         default="length",
         help="how to calculate the value of a sequence (default=length)",
     )
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "task",
         "dominoe_sequencer",
         "--value_multiplier",
@@ -233,7 +278,7 @@ def add_dataset_parameters(parser):
         default=1.0,
         help="how to scale the value of a sequence (default=1.0)",
     )
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "task",
         "dominoe_sorter",
         "--allow_mistakes",
@@ -241,7 +286,7 @@ def add_dataset_parameters(parser):
         default=False,
         help="allow mistakes in the sorting task (default=False)",
     )
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "task",
         "tsp",
         "--num_cities",
@@ -249,7 +294,7 @@ def add_dataset_parameters(parser):
         default=10,
         help="the number of cities in the TSP (default=10)",
     )
-    parser.add_conditional_argument(
+    parser.add_conditional(
         "task",
         "tsp",
         "--coord_dims",
