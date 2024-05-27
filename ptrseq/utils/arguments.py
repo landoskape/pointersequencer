@@ -30,7 +30,7 @@ class ConditionalArgumentParser(ArgumentParser):
 
         return ArgumentParser.parse_args(_parser, args=args, namespace=namespace)
 
-    def add_conditional_argument(self, dest, func_match, *args, **kwargs):
+    def add_conditional(self, dest, func_match, *args, **kwargs):
         """
         add conditional argument that is only added when parent arguments match a condition
 
