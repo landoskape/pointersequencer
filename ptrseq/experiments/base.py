@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 from natsort import natsorted
 from freezedry import freezedry
+from conditional_parser import ConditionalArgumentParser
 
 import torch
 import wandb
@@ -12,7 +13,7 @@ from matplotlib import pyplot as plt
 
 from .. import files as files
 from ..datasets import get_dataset
-from ..utils import get_scheduler, scheduler_from_parser, ConditionalArgumentParser
+from ..utils import get_scheduler, scheduler_from_parser
 
 
 class Experiment(ABC):
