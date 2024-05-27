@@ -5,7 +5,7 @@ import torch
 
 
 from .support import get_dominoes, get_best_line, pad_best_lines
-from ..utils import named_transpose, process_arguments, stack_results
+from ..utils import named_transpose, process_arguments, stack_results, get_checkpoint_path, get_checkpoint_epoch
 from .base import Dataset, DatasetSL, DatasetRL, RequiredParameter
 
 
@@ -821,27 +821,64 @@ class DominoeSequencer(DominoeMaster, DatasetSL, DatasetRL):
 
     # otherwise, run standard training and testing
     def _run_curriculum(self, exp, nets, optimizers, target_reward=True, do_training=True, do_testing=True):
+        """handle 3 phase curriculum for dominoe sequencer task"""
         results = {}
+
+        phase_names = ["phase0", "phase1", "phase2"]
+        phase_params = [
+            dict(randomize_direction=False, value_method="length", value_multiplier=1.0),
+            dict(randomize_direction=True, value_method="length", value_multiplier=1.0),
+            dict(randomize_direction=True, value_method="dominoe", value_multiplier=1 / self.prms["highest_dominoe"]),
+        ]
 
         # train networks
         if do_training:
-            results["curriculum_epochs"] = [exp.args.train_epochs, exp.args.train_epochs, exp.args.train_epochs]
+            # get curriculum epochs (and raise error if it has the wrong number of them)
+            msg = "curriculum_epochs should have 3 values for the dominoe sequencer curriculum"
+            assert len(exp.args.curriculum_epochs) == 3, msg
+            results["curriculum_epochs"] = exp.args.curriculum_epochs
 
-            self.prms["randomize_direction"] = False
-            train_results_phase0 = self._train(exp, nets, optimizers, prefix_ckpts="phase0")
+            # if using checkpoints, check what the latest epoch is
+            use_prev_ckpts = getattr(self.args, "use_prev_ckpts", False)
+            if use_prev_ckpts:
+                path_ckpts = exp.get_checkpoint_path()
+                checkpoint_path = [get_checkpoint_path(path_ckpts, prefix=prefix) for prefix in phase_names]
+                checkpoint_epochs = [get_checkpoint_epoch(path) if path is not None else None for path in checkpoint_path]
+                epochs_finished = [
+                    ckpt_epoch is not None and ckpt_epoch >= curr_epoch
+                    for ckpt_epoch, curr_epoch in zip(checkpoint_epochs, exp.args.curriculum_epochs)
+                ]
 
-            self.prms["randomize_direction"] = True
-            train_results_phase1 = self._train(exp, nets, optimizers, prefix_ckpts="phase1")
+                # get index to first element of epochs_finished that is False
+                # which is the phase to resume training from
+                idx = next((idx for idx, val in enumerate(epochs_finished) if not val), None)
 
-            self.prms["value_method"] = "dominoe"
-            self.prms["value_multiplier"] = 1 / self.prms["highest_dominoe"]  # will make range of rewards 0 to 2
-            train_results_phase2 = self._train(exp, nets, optimizers, prefix_ckpts="phase2")
+                # only use previous checkpoints if they exist
+                # and are in a phase before or up to the first phase that doesn't need more epochs...
+                use_prev_ckpts = [iphase < idx for iphase in range(len(phase_names))]
 
-            results["train_results"] = stack_results(train_results_phase0, train_results_phase1, train_results_phase2)
+            else:
+                use_prev_ckpts = [False] * len(phase_names)
+
+            # go through train
+            train_results = []
+            for idx, (phase_name, phase_param, use_prev) in enumerate(zip(phase_names, phase_params, use_prev_ckpts)):
+                self.prms.update(phase_param)
+                train_results.append(
+                    self._train(
+                        exp,
+                        nets,
+                        optimizers,
+                        prefix_ckpts=phase_name,
+                        num_epochs=exp.args.curriculum_epochs[idx],
+                        use_prev_ckpts=use_prev,
+                    )
+                )
+
+            results["train_results"] = stack_results(*train_results)
 
         if do_testing:
-            final_curriculum_state = dict(randomize_direction=True, value_method="dominoe", value_multiplier=1 / self.prms["highest_dominoe"])
-            self.prms.update(final_curriculum_state)
+            self.prms.update(phase_params[-1])
             results["test_results"] = self._test(exp, nets, target_reward=target_reward)
 
         return results

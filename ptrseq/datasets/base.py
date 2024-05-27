@@ -108,15 +108,14 @@ class Dataset(ABC):
 
         return results
 
-    def _train(self, exp, nets, optimizers, prefix_ckpts=None):
+    def _train(self, exp, nets, optimizers, prefix_ckpts=None, **extra_parameters):
         """train networks for this datasets"""
-        train_parameters = exp.make_train_parameters(self)
-        train_parameters["prefix_ckpts"] = prefix_ckpts
+        train_parameters = exp.make_train_parameters(self, train=True, prefix_ckpts=prefix_ckpts, **extra_parameters)
         return train(nets, optimizers, self, **train_parameters)
 
-    def _test(self, exp, nets, target_reward=True):
+    def _test(self, exp, nets, target_reward=True, **extra_parameters):
         """test networks for this dataset"""
-        extra_parameters = dict(save_reward=True, return_target=True) if target_reward else {}
+        extra_parameters.update(dict(save_reward=True, return_target=True) if target_reward else {})
         test_parameters = exp.make_train_parameters(self, train=False, **extra_parameters)
         return test(nets, self, **test_parameters)
 

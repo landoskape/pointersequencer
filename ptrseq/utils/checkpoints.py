@@ -69,6 +69,12 @@ def _update_results(results, ckpt_results, num_completed):
             print(f"skipping {key} in checkpoint results update (not a tensor)")
 
 
+def last_checkpoint_epoch(path):
+    """Method for getting the last epoch from a checkpoint."""
+    checkpoint = torch.load(path)
+    return checkpoint["epoch"] + 1
+
+
 def load_checkpoint(nets, optimizers, results, parameters, device, path):
     """
     Method for loading presaved checkpoint during training.
