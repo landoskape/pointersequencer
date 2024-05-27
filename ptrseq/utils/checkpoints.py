@@ -1,7 +1,7 @@
 from natsort import natsorted
 import torch
 
-from .wrangling import check_similarity
+from .wrangling import check_similarity, get_dictionary_differences
 
 
 def make_checkpoint_path(path_ckpt, epoch, uniq_ckpts, prefix=None):
@@ -69,7 +69,7 @@ def _update_results(results, ckpt_results, num_completed):
             print(f"skipping {key} in checkpoint results update (not a tensor)")
 
 
-def last_checkpoint_epoch(path):
+def get_checkpoint_epoch(path):
     """Method for getting the last epoch from a checkpoint."""
     checkpoint = torch.load(path)
     return checkpoint["epoch"] + 1
@@ -90,6 +90,15 @@ def load_checkpoint(nets, optimizers, results, parameters, device, path):
 
     # check if results and ckpt results have same structure
     check_similarity(results, ckpt_results, name1="results", name2="ckpt_results", compare_shapes=False, compare_dims=True)
+
+    # check for any differences in the parameters of checkpoint and current run
+    ckpt_unique, curr_unique, diff_values = get_dictionary_differences(ckpt_parameters, parameters)
+    if ckpt_unique:
+        print(f"WARNING: found unique parameters in checkpoint: {ckpt_unique}")
+    if curr_unique:
+        print(f"WARNING: found unique parameters in current run: {curr_unique}")
+    if diff_values:
+        print(f"WARNING: found different parameter values in checkpoint: {diff_values}")
 
     # update results if they are consistent
     num_completed = checkpoint["epoch"] + 1

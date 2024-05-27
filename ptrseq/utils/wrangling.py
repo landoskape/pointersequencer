@@ -102,3 +102,21 @@ def stack_results(*results, sublevel=0):
                 print(f"skipping '{key}' in checkpoint results update (not a tensor or dictionary)")
 
     return reference
+
+
+def get_dictionary_differences(dict1, dict2):
+    """compare two dictionaries to see if they have the same keys and values"""
+    unique_d1_keys = dict1.keys() - dict2.keys()
+    unique_d2_keys = dict2.keys() - dict1.keys()
+    shared_keys = dict1.keys() & dict2.keys()
+    d1_unique_items = {}
+    d2_unique_items = {}
+    diff_shared_values = {}
+    for key in unique_d1_keys:
+        d1_unique_items[key] = dict1[key]
+    for key in unique_d2_keys:
+        d2_unique_items[key] = dict2[key]
+    for key in shared_keys:
+        if dict1[key] != dict2[key]:
+            diff_shared_values[key] = (dict1[key], dict2[key])
+    return d1_unique_items, d2_unique_items, diff_shared_values
