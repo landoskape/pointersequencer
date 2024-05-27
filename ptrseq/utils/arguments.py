@@ -26,24 +26,24 @@ class ConditionalArgumentParser(ArgumentParser):
 
         _parser = deepcopy(self)
         already_added = [False for _ in range(self._num_conditional)]
-        _parser = self._add_conditionals(_parser, args, already_added)
+        _parser = self._prepare_conditionals(_parser, args, already_added)
 
         return ArgumentParser.parse_args(_parser, args=args, namespace=namespace)
 
     def add_conditional(self, dest, func_match, *args, **kwargs):
         """
-        add conditional argument that is only added when parent arguments match a condition
+        add conditional argument that is only added when parent argument match a condition
 
         args:
-            dest: is the destination of the parent (where to look in the namespace)
-            func_match: is a function that value of the destination and returns a boolean
-                        indicating whether or not to add this conditional
-                        note: if it callable, then it will be called on the value of dest
-                              if it isn't callable, then it will simply by compared to the value of dest
-            *args: the arguments to add when the condition is met
-            **kwargs: the keyword arguments to add when the condition is met
+            dest: is the destination of the parent (where to look in the namespace for conditional comparisons)
+            func_match: is a function that compares the value in "dest" and returns a boolean indicating whether
+                        or not to add this conditional.
+                        note: if callable, then it will be called on the value of dest
+                              if it isn't callable, then it will simply be compared to the value of dest, e.g. (dest==func_match)
+            *args: the arguments to add when the condition is met (via the standard add_argument method)
+            **kwargs: the keyword arguments to add when the condition is met (via the standard add_argument method)
         """
-        # attempt to add the conditional argument to a dummy parser to check for errors
+        # attempt to add the conditional argument to a dummy parser to check for errors right away
         _dummy = deepcopy(self)
         _dummy.add_argument(*args, **kwargs)
 
@@ -54,8 +54,8 @@ class ConditionalArgumentParser(ArgumentParser):
         self._conditional_kwargs.append(kwargs)
         self._num_conditional += 1
 
-    def _add_conditionals(self, _parser, args, already_added):
-        """Add conditional arguments to the parser through a hierarchical parse."""
+    def _prepare_conditionals(self, _parser, args, already_added):
+        """Prepare conditional arguments to the parser through a hierarchical parse."""
         # remove help arguments for an initial parse to determine if conditionals are needed
         args = [arg for arg in args if arg not in ["-h", "--help"]]
         namespace = ArgumentParser.parse_known_args(_parser, args=args)[0]
@@ -70,7 +70,7 @@ class ConditionalArgumentParser(ArgumentParser):
                     already_added[i] = True
 
             # recursively call the function until all conditionals are added
-            _parser = self._add_conditionals(_parser, args, already_added)
+            _parser = self._prepare_conditionals(_parser, args, already_added)
 
         # return a parser with all conditionals added
         return _parser
@@ -79,14 +79,12 @@ class ConditionalArgumentParser(ArgumentParser):
         """make a function that returns a boolean from a function or value."""
         # if the function provided is callable, use it as is
         if callable(func):
-            if len(signature(func).parameters.values()) == 2:
-                return func
-            else:
-                return lambda dest_value, namespace: func(dest_value)
+            if len(signature(func).parameters.values()) != 1:
+                raise ValueError("Function must take 1 argument for conditional functions")
+            return func
 
         # otherwise, create a function that compares the value to the provided value
-        else:
-            return lambda dest_value, namespace: dest_value == func
+        return lambda dest_value: dest_value == func
 
     def _conditionals_ready(self, namespace, already_added):
         """Check if all conditionals are finished."""
@@ -106,7 +104,7 @@ class ConditionalArgumentParser(ArgumentParser):
             if not already_added[idx]:
                 # if it hasn't been added and the conditional function matches the value in parent,
                 # then return True to indicate that this conditional is required
-                if self._conditional_func_match[idx](getattr(namespace, parent), namespace):
+                if self._conditional_func_match[idx](getattr(namespace, parent)):
                     return True
 
         # otherwise return False to indicate that this conditional does not need to be added
