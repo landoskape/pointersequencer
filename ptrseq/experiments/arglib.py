@@ -27,7 +27,7 @@ def add_network_training_metaparameters(parser):
     )
     parser.add_argument("--thompson", type=argbool, default=True, help="whether to use Thompson sampling during training (default=True)")
     parser.add_argument("--baseline", type=argbool, default=True, help="whether to use a baseline correction during training (default=True)")
-    parser.add_contional_argument(
+    parser.add_conditional(
         "baseline",
         True,
         "--bl_temperature",
@@ -35,7 +35,7 @@ def add_network_training_metaparameters(parser):
         default=1.0,
         help="temperature for baseline networks during training (default=1.0)",
     )
-    parser.add_contional_argument(
+    parser.add_conditional(
         "baseline",
         True,
         "--bl_thompson",
@@ -43,7 +43,7 @@ def add_network_training_metaparameters(parser):
         default=False,
         help="whether to use Thompson sampling for baseline networks (default=False)",
     )
-    parser.add_contional_argument(
+    parser.add_conditional(
         "baseline",
         True,
         "--bl_significance",
@@ -51,7 +51,7 @@ def add_network_training_metaparameters(parser):
         default=0.05,
         help="significance level for updating baseline networks (default=0.05)",
     )
-    parser.add_contional_argument(
+    parser.add_conditional(
         "baseline",
         True,
         "--bl_batch_size",
@@ -59,7 +59,7 @@ def add_network_training_metaparameters(parser):
         default=256,
         help="batch size for baseline networks (default=256)",
     )
-    parser.add_contional_argument(
+    parser.add_conditional(
         "baseline",
         True,
         "--bl_frequency",
@@ -79,19 +79,21 @@ def add_scheduling_parameters(parser, name="lr"):
 
     # helper function to create parameter names (used many times in parser.add_conditional)
     _prm = lambda prm: f"--{name}_{prm}"
+    _dest = lambda dest: f"{name}_{dest}"
     use_name = _prm("use_scheduler")
+    use_dest = _dest("use_scheduler")
 
     # add "{name}_use_scheduler" to determine whether to use a scheduler for this parameter
     parser.add_argument(use_name, type=argbool, default=False, help=f"whether to use a scheduler for {name} (default=False)")
 
     # add conditional argument for determining which scheduler to use and initial value / negative_clip (required by all)
-    parser.add_conditional(use_name, True, _prm("scheduler"), type=str, default="constant", help=f"which scheduler to use (default=constant)")
-    parser.add_conditional(use_name, True, _prm("initial_value"), type=float, default=None, help=f"initial value for the Scheduler (default=None)")
-    parser.add_conditional(use_name, True, _prm("negative_clip"), type=argbool, default=True, help=f"ignore negative epochs (default=True)")
+    parser.add_conditional(use_dest, True, _prm("scheduler"), type=str, default="constant", help=f"which scheduler to use (default=constant)")
+    parser.add_conditional(use_dest, True, _prm("initial_value"), type=float, default=None, help=f"initial value for the Scheduler (default=None)")
+    parser.add_conditional(use_dest, True, _prm("negative_clip"), type=argbool, default=True, help=f"ignore negative epochs (default=True)")
 
     # add scheduler-specific conditional parameters
     parser.add_conditional(
-        _prm("scheduler"),
+        _dest("scheduler"),
         "step",
         _prm("step_size"),
         type=int,
@@ -99,7 +101,7 @@ def add_scheduling_parameters(parser, name="lr"):
         help=f"step size for the StepScheduler (required)",
     )
     parser.add_conditional(
-        _prm("scheduler"),
+        _dest("scheduler"),
         lambda val: val in ["step", "exp", "expbase"],
         _prm("gamma"),
         type=float,
@@ -107,7 +109,7 @@ def add_scheduling_parameters(parser, name="lr"):
         help=f"gamma for the scheduler (required)",
     )
     parser.add_conditional(
-        _prm("scheduler"),
+        _dest("scheduler"),
         lambda val: val in ["expbase", "linear"],
         _prm("final_value"),
         type=float,
@@ -115,7 +117,7 @@ def add_scheduling_parameters(parser, name="lr"):
         help=f"final_value for the scheduler (required)",
     )
     parser.add_conditional(
-        _prm("scheduler"),
+        _dest("scheduler"),
         "linear",
         _prm("total_epochs"),
         type=int,
@@ -128,15 +130,16 @@ def add_scheduling_parameters(parser, name="lr"):
 def _add_transformer_parameters(parser, name, num_heads=8, kqnorm=True, expansion=1, kqv_bias=False, mlp_bias=True, residual=True):
     """add conditional parameters for a transformer layer"""
     _prm = lambda prm: f"--{name}_{prm}"
+    _dest = lambda dest: f"{name}_{dest}"
     _in_both = lambda val: val in ["attention", "transformer"]
     parser.add_conditional(
-        _prm("method"), _in_both, _prm("num_heads"), type=int, default=num_heads, help=f"the number of heads in {name} layers (default={num_heads})"
+        _dest("method"), _in_both, _prm("num_heads"), type=int, default=num_heads, help=f"the number of heads in {name} layers (default={num_heads})"
     )
     parser.add_conditional(
-        _prm("method"), _in_both, _prm("kqnorm"), type=argbool, default=kqnorm, help=f"whether to use kqnorm in the {name} (default={kqnorm})"
+        _dest("method"), _in_both, _prm("kqnorm"), type=argbool, default=kqnorm, help=f"whether to use kqnorm in the {name} (default={kqnorm})"
     )
     parser.add_conditional(
-        _prm("method"),
+        _dest("method"),
         "transformer",
         _prm("expansion"),
         type=int,
@@ -144,7 +147,7 @@ def _add_transformer_parameters(parser, name, num_heads=8, kqnorm=True, expansio
         help=f"the expansion of the FF layers in the {name} (default={expansion})",
     )
     parser.add_conditional(
-        _prm("method"),
+        _dest("method"),
         _in_both,
         _prm("kqv_bias"),
         type=argbool,
@@ -152,7 +155,7 @@ def _add_transformer_parameters(parser, name, num_heads=8, kqnorm=True, expansio
         help=f"whether to use bias in the attention kqv layers (default={kqv_bias})",
     )
     parser.add_conditional(
-        _prm("method"),
+        _dest("method"),
         "transformer",
         _prm("mlp_bias"),
         type=argbool,
@@ -160,7 +163,7 @@ def _add_transformer_parameters(parser, name, num_heads=8, kqnorm=True, expansio
         help=f"use bias in the MLP part of the {name} (default={mlp_bias})",
     )
     parser.add_conditional(
-        _prm("method"),
+        _dest("method"),
         "attention",
         _prm("residual"),
         type=argbool,
@@ -170,29 +173,61 @@ def _add_transformer_parameters(parser, name, num_heads=8, kqnorm=True, expansio
     return parser
 
 
-def add_pointernet_parameters(parser):
-    """arguments for the PointerNet including conditionals for encoder/decoder/pointer layer methods"""
+def add_pointernet_parameters(parser, no_encoder=False, no_decoder=False, no_pointer=False):
+    """
+    arguments for the PointerNet including conditionals for encoder/decoder/pointer layer methods
+
+    adds arguments for the embedding, encoder, decoder, and pointer layers in a PointerNet
+    the encoder, decoder, and pointer layers have a "method" which is a string that determines
+    which kind of layer to use. The conditional arguments associated with it are added.
+
+    Sometimes all conditional arguments need to be added regardless, so it's possible to turn
+    off the conditional adding by using no_{encoder,decoder,pointer}=True.
+    """
     parser.add_argument("--embedding_dim", type=int, default=128, help="the dimensions of the embedding (default=128)")
     parser.add_argument("--embedding_bias", type=argbool, default=True, help="whether to use embedding_bias (default=True)")
+
     parser.add_argument("--num_encoding_layers", type=int, default=1, help="the number of encoding layers in the PointerNet (default=1)")
     parser.add_argument("--encoder_method", type=str, default="transformer", help="PointerNet encoding layer method (default='transformer')")
-    parser = _add_transformer_parameters(parser, "encoder")
+    if not no_encoder:
+        parser = _add_transformer_parameters(parser, "encoder")
+
     parser.add_argument("--decoder_method", type=str, default="transformer", help="PointerNet decoding layer method (default='transformer')")
-    parser = _add_transformer_parameters(parser, "decoder")
-    parser.add_conditional(
-        "decoder_method", "gru", "--decoder_gru_bias", type=argbool, default=True, help="whether to use bias in the gru decoder method (default=True)"
-    )
+    if not no_decoder:
+        parser = _add_transformer_parameters(parser, "decoder")
+        parser.add_conditional(
+            "decoder_method",
+            "gru",
+            "--decoder_gru_bias",
+            type=argbool,
+            default=True,
+            help="whether to use bias in the gru decoder method (default=True)",
+        )
+
     parser.add_argument("--pointer_method", type=str, default="standard", help="PointerNet pointer layer method (default='standard')")
-    parser = _add_transformer_parameters(parser, "pointer")
-    _bias_required = lambda val: val in ["standard", "dot", "dot_noln"]
-    parser.add_conditional(
-        "pointer_method",
-        _bias_required,
-        "--pointer_bias",
-        type=argbool,
-        default=False,
-        help="whether to use bias in pointer projection layers (default=False)",
-    )
+    if not no_pointer:
+        parser = _add_transformer_parameters(parser, "pointer")
+        _bias_required = lambda val: val in ["standard", "dot", "dot_noln"]
+        parser.add_conditional(
+            "pointer_method",
+            _bias_required,
+            "--pointer_bias",
+            type=argbool,
+            default=False,
+            help="whether to use bias in pointer projection layers (default=False)",
+        )
+    return parser
+
+
+def add_pointer_layer_parameters(parser, num_heads=8, kqnorm=True, expansion=1, bias=False, kqv_bias=False, mlp_bias=True, residual=True):
+    """arguments for all possible pointer layer in a PointerNet"""
+    parser.add_argument("--pointer_num_heads", type=int, default=num_heads, help=f"number of heads in pointer layers (default={num_heads})")
+    parser.add_argument("--pointer_kqnorm", type=argbool, default=kqnorm, help=f"use kqnorm in pointerlayer (default={kqnorm})")
+    parser.add_argument("--pointer_expansion", type=int, default=expansion, help=f"expansion of the FF layers in pointerlayer (default={expansion})")
+    parser.add_argument("--pointer_bias", type=argbool, default=bias, help=f"use bias in pointerlayers (default={bias})")
+    parser.add_argument("--pointer_kqv_bias", type=argbool, default=kqv_bias, help=f"use attention bias in pointer layers (default={kqv_bias})")
+    parser.add_argument("--pointer_mlp_bias", type=argbool, default=mlp_bias, help=f"use MLP bias pointer layers (default={mlp_bias})")
+    parser.add_argument("--pointer_residual", type=argbool, default=residual, help=f"use residuals in attentional pointerlayers (default={residual})")
     return parser
 
 

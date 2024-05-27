@@ -32,7 +32,8 @@ class PointerArchitectureComparison(Experiment):
         parser = arglib.add_network_training_metaparameters(parser)
         parser = arglib.add_scheduling_parameters(parser, "lr")
         parser = arglib.add_scheduling_parameters(parser, "train_temperature")
-        parser = arglib.add_pointernet_parameters(parser)
+        parser = arglib.add_pointernet_parameters(parser, no_pointer=True)
+        parser = arglib.add_pointer_layer_parameters(parser)
         parser = arglib.add_checkpointing(parser)
         parser = arglib.add_dataset_parameters(parser)
         return parser
