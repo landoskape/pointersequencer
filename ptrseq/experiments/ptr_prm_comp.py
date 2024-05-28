@@ -9,12 +9,12 @@ from ..utils import named_transpose
 from ..plotting import plot_train_test_results
 
 
-class PointerArchitectureComparison(Experiment):
-    """An experiment class for running pointer architecture comparisons"""
+class PointerParameterComparison(Experiment):
+    """An experiment class for running pointer architecture parameter comparisons"""
 
     def get_basename(self):
         """basename for experiment (determines folder, filenames, etc.)"""
-        return "ptr_arch_comp"
+        return "ptr_prm_comp"
 
     def prepare_path(self):
         """prepare the path for the experiment"""
@@ -26,17 +26,11 @@ class PointerArchitectureComparison(Experiment):
         parser = arglib.add_network_training_metaparameters(parser)
         parser = arglib.add_scheduling_parameters(parser, "lr")
         parser = arglib.add_scheduling_parameters(parser, "train_temperature")
-        parser = arglib.add_pointernet_parameters(parser, no_pointer=True)
+        parser = arglib.add_pointernet_parameters(parser)
         parser = arglib.add_pointer_layer_parameters(parser)
         parser = arglib.add_checkpointing(parser)
         parser = arglib.add_dataset_parameters(parser)
         return parser
-
-    def pointer_methods(self):
-        """get pointer methods for architecture comparisons"""
-        # option to use arguments to exclude pointer methods...
-        # but for now just use all of them
-        return get_pointer_methods()
 
     def create_networks(self, input_dim, context_parameters):
         """
@@ -51,32 +45,14 @@ class PointerArchitectureComparison(Experiment):
         # create networks
         embedding_dim, pointer_kwargs = get_pointer_arguments(self.args)
 
-        # Remove pointer method because it's the variable that this experiment is exploring
-        _ = pointer_kwargs.pop("pointer_method", None)
+        raise NotImplementedError("Need to code up some variation in parameters for this experiment.")
 
-        nets, pointer_methods = named_transpose(
-            [
-                (
-                    get_pointer_network(
-                        input_dim,
-                        embedding_dim,
-                        pointer_method=pointer_method,
-                        **context_parameters,
-                        **pointer_kwargs,
-                    ),
-                    pointer_method,
-                )
-                for pointer_method in self.pointer_methods()
-                for _ in range(self.args.replicates)
-            ]
-        )
+        nets = [get_pointer_network(input_dim, embedding_dim, **context_parameters, **pointer_kwargs) for _ in range(self.args.replicates)]
         nets = [net.to(self.device) for net in nets]
         optimizers = [torch.optim.Adam(net.parameters(), lr=self.args.lr, weight_decay=self.args.wd) for net in nets]
 
         # The only thing that needs to be recorded is the pointer method used for each network
-        prms = dict(
-            pointer_methods=pointer_methods,
-        )
+        prms = dict()
         return nets, optimizers, prms
 
     def main(self):
