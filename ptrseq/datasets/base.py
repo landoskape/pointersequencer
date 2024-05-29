@@ -73,6 +73,8 @@ class Dataset(ABC):
         """
         # get registered parameters
         prms_to_use = copy(self.prms)
+        # get subset of prms containing same keys as prms_to_use
+        prms = {k: prms[k] for k in prms_to_use if k in prms}
         # update parameters
         prms_to_use.update(prms)
         # return to caller function

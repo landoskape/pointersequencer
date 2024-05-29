@@ -270,7 +270,7 @@ class Experiment(ABC):
         # Save experiment results
         torch.save(results, self.get_results_path())
 
-    def load_experiment(self, no_results=False, verbose=False):
+    def load_experiment(self, use_saved_prms=True, no_results=False, verbose=False):
         """Method for loading saved experiment parameters and results"""
         # Check if prms path is there
         if not self.get_prms_path().exists():
@@ -281,8 +281,9 @@ class Experiment(ABC):
             raise ValueError(f"saved results at: f{self.get_results_path()} not found!")
 
         # Load parameters into object
-        prms = torch.load(self.get_prms_path())
-        self._update_args(prms, verbose=verbose)
+        if use_saved_prms:
+            prms = torch.load(self.get_prms_path())
+            self._update_args(prms, verbose=verbose)
 
         # Don't load results if requested
         if no_results:
