@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import torch
 from torch import nn
+from transformer_lens.hook_points import HookPoint, HookedRootModule
 
 from .net_utils import process_input, process_multimodal_input, masked_softmax
 
@@ -71,7 +72,7 @@ def get_attention_layer(
 # ---------------------------------
 # ----------- attention -----------
 # ---------------------------------
-class AttentionBaseClass(nn.Module, ABC):
+class AttentionBaseClass(ABC, HookedRootModule):
     """
     Canonical implementation of multi-head self attention.
     Adopted from pbloem/former
@@ -107,6 +108,9 @@ class AttentionBaseClass(nn.Module, ABC):
         # Build mixing matrix for unifying num_heads
         self._build_mixing_matrix()
 
+        # Setup hooks
+        self.setup()
+
     def _build_attention_matrices(self):
         """
         method for building attention matrices for sending input to queries, keys, and values
@@ -117,12 +121,19 @@ class AttentionBaseClass(nn.Module, ABC):
         self.to_queries = nn.Linear(self.embedding_dim, self.embedding_dim, bias=self.kqv_bias)
         self.to_keys = nn.Linear(self.embedding_dim, self.embedding_dim, bias=self.kqv_bias)
         self.to_values = nn.Linear(self.embedding_dim, self.embedding_dim, bias=self.kqv_bias)
+        self._query_hook = HookPoint()
+        self._key_hook = HookPoint()
+        self._value_hook = HookPoint()
+        self._attention_hook = HookPoint()
+        self._head_output_hook = HookPoint()
 
     def _build_multimodal_attention_matrices(self, num_multimodal):
         """method for building attention matrices for sending input to queries, keys, and values for multimodal inputs"""
         if num_multimodal > 0:
             self.to_mm_keys = nn.ModuleList([nn.Linear(self.embedding_dim, self.embedding_dim, bias=self.kqv_bias) for _ in range(num_multimodal)])
             self.to_mm_values = nn.ModuleList([nn.Linear(self.embedding_dim, self.embedding_dim, bias=self.kqv_bias) for _ in range(num_multimodal)])
+            self._mm_key_hooks = [HookPoint() for _ in range(num_multimodal)]
+            self._mm_value_hooks = [HookPoint() for _ in range(num_multimodal)]
 
     def _build_layer_norms(self):
         """method for building layer norm matrices for each head"""
@@ -135,6 +146,7 @@ class AttentionBaseClass(nn.Module, ABC):
     def _build_mixing_matrix(self):
         """method for building mixing matrix for unifying num_heads"""
         self.unify_heads = nn.Linear(self.embedding_dim, self.embedding_dim)
+        self._unify_head_hook = HookPoint()
 
     def _send_to_kqv(self, x, context=None, multimode=None):
         """
@@ -164,9 +176,9 @@ class AttentionBaseClass(nn.Module, ABC):
         xkv = torch.cat((x, context), dim=1) if context is not None else x
 
         # convert input tokens to their keys, queries, and values
-        queries = self.to_queries(x)
-        keys = self.to_keys(xkv)
-        values = self.to_values(xkv)
+        queries = self._query_hook(self.to_queries(x))
+        keys = self._key_hook(self.to_keys(xkv))
+        values = self._value_hook(self.to_values(xkv))
 
         # separate num_heads
         queries = queries.view(batch_size, qtokens, self.num_heads, self.num_headsize)
@@ -175,8 +187,10 @@ class AttentionBaseClass(nn.Module, ABC):
 
         if using_multimode:
             # generate keys and values for multimodal inputs
-            mm_keys = [to_mmkeys(mm) for to_mmkeys, mm in zip(self.to_mm_keys, multimode)]
-            mm_values = [to_mmvalues(mm) for to_mmvalues, mm in zip(self.to_mm_values, multimode)]
+            mm_keys = [_mm_key_hooks(to_mmkeys(mm)) for _mm_key_hooks, to_mmkeys, mm in zip(self._mm_key_hooks, self.to_mm_keys, multimode)]
+            mm_values = [
+                _mm_value_hooks(to_mmvalues(mm)) for _mm_value_hooks, to_mmvalues, mm in zip(self._mm_value_hooks, self.to_mm_values, multimode)
+            ]
 
             # separate context num_heads
             mm_keys = [k.view(batch_size, mmt, self.num_heads, self.num_headsize) for k, mmt in zip(mm_keys, mm_tokens)]
@@ -250,7 +264,7 @@ class AttentionBaseClass(nn.Module, ABC):
         keys = keys / (self.embedding_dim ** (1 / 4))
 
         # dot product between scaled queries and keys is attention
-        attention = torch.bmm(queries, keys.transpose(1, 2))
+        attention = self._attention_hook(torch.bmm(queries, keys.transpose(1, 2)))
 
         # create mask for attention matrix, expand and reshape appropriately
         attention_mask = torch.bmm(mask.unsqueeze(2), key_mask.unsqueeze(1))
@@ -270,10 +284,10 @@ class AttentionBaseClass(nn.Module, ABC):
         out = torch.bmm(attention, values).view(batch_size, self.num_heads, attention.size(1), self.num_headsize)
 
         # unify num_heads, change view to original input size
-        out = out.transpose(1, 2).contiguous().view(batch_size, attention.size(1), self.num_headsize * self.num_heads)
+        out = self._head_output_hook(out.transpose(1, 2).contiguous()).view(batch_size, attention.size(1), self.num_headsize * self.num_heads)
 
         # unify num_heads with linear layer
-        return self.unify_heads(out)
+        return self._unify_head_hook(self.unify_heads(out))
 
     def _mix_residual(self, x, out):
         """mix output of attention num_heads with residual channel when requested"""

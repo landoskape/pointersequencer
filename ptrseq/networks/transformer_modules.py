@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import torch
 from torch import nn
+from transformer_lens.hook_points import HookPoint, HookedRootModule
 
 from .attention_modules import get_attention_layer, _attention_type
 
@@ -44,7 +45,7 @@ def get_transformer_layer(
 # ---------------------------------
 # ------------ networks -----------
 # ---------------------------------
-class TransformerBaseClass(nn.Module, ABC):
+class TransformerBaseClass(ABC, HookedRootModule):
     """
     Performs multi-headed attention on input, then layer normalization, then
     two-stage feedforward processing with an optional expansion, then layer
@@ -80,17 +81,23 @@ class TransformerBaseClass(nn.Module, ABC):
             residual=False,  # residual is handled in the transformer layer's forward pass
         )
 
-        # make the mlp layers
-        mlp_layers = [
-            nn.Linear(embedding_dim, embedding_dim * expansion, bias=mlp_bias),
-            nn.ReLU(),
-            nn.Linear(embedding_dim * expansion, embedding_dim, bias=mlp_bias),
-        ]
-        self.mlp = nn.Sequential(*mlp_layers)
+        self._attention_hook = HookPoint()
+
+        # make the mlp components
+        self.mlp_in = nn.Linear(embedding_dim, embedding_dim * expansion, bias=mlp_bias)
+        self.mlp_out = nn.Linear(embedding_dim * expansion, embedding_dim, bias=mlp_bias)
+        self._mlp_pre_hook = HookPoint()
+        self._mlp_post_hook = HookPoint()
+
+        # make the mlp unit
+        self.mlp = nn.Sequential(self.mlp_in, self._mlp_pre_hook, nn.ReLU(), self.mlp_out)
 
         # make the layer norm layers
         self.layer_norm_attended = nn.LayerNorm(embedding_dim)
         self.layer_norm_transformed = nn.LayerNorm(embedding_dim)
+
+        # build hooks
+        self.setup()
 
     def _check_args(self, embedding_dim, num_heads, expansion):
         if type(expansion) != int or expansion < 1:
@@ -103,7 +110,7 @@ class TransformerBaseClass(nn.Module, ABC):
         # mix attended with residual stream and do first layer normalization
         x = self.layer_norm_attended(x + attended)
         # process through mlp layer
-        transformed = self.mlp(x)
+        transformed = self._mlp_post_hook(self.mlp(x))
         # mix transformed with residual stream and do second layer normalization
         return self.layer_norm_transformed(x + transformed)
 
@@ -121,7 +128,7 @@ class Transformer(TransformerBaseClass):
         TransformerBaseClass.__init__(self, *args, contextual=self.contextual, multimodal=self.multimodal, **kwargs)
 
     def forward(self, x, mask=None):
-        attended = self.attention(x, mask=mask)
+        attended = self._attention_hook(self.attention(x, mask=mask))
         return self._forward_post_attention(x, attended)
 
 
@@ -133,7 +140,7 @@ class ContextualTransformer(TransformerBaseClass):
         TransformerBaseClass.__init__(self, *args, contextual=self.contextual, multimodal=self.multimodal, **kwargs)
 
     def forward(self, x, context, mask=None, context_mask=None):
-        attended = self.attention(x, context, mask=mask, context_mask=context_mask)
+        attended = self._attention_hook(self.attention(x, context, mask=mask, context_mask=context_mask))
         return self._forward_post_attention(x, attended)
 
 
@@ -145,7 +152,7 @@ class MultimodalTransformer(TransformerBaseClass):
         TransformerBaseClass.__init__(self, *args, contextual=self.contextual, multimodal=self.multimodal, **kwargs)
 
     def forward(self, x, multimode, mask=None, mm_mask=None):
-        attended = self.attention(x, multimode, mask=mask, mm_mask=mm_mask)
+        attended = self._attention_hook(self.attention(x, multimode, mask=mask, mm_mask=mm_mask))
         return self._forward_post_attention(x, attended)
 
 
@@ -157,7 +164,7 @@ class MultimodalContextualTransformer(TransformerBaseClass):
         TransformerBaseClass.__init__(self, *args, contextual=self.contextual, multimodal=self.multimodal, **kwargs)
 
     def forward(self, x, context, multimode, mask=None, context_mask=None, mm_mask=None):
-        attended = self.attention(x, context, multimode, mask=mask, context_mask=context_mask, mm_mask=mm_mask)
+        attended = self._attention_hook(self.attention(x, context, multimode, mask=mask, context_mask=context_mask, mm_mask=mm_mask))
         return self._forward_post_attention(x, attended)
 
 
