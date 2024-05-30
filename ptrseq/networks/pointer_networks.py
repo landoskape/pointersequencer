@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import torch
 from torch import nn
+from transformer_lens.hook_points import HookPoint, HookedRootModule
 
 from .attention_modules import get_attention_layer, _attention_type
 from .transformer_modules import get_transformer_layer
@@ -214,7 +215,7 @@ class PointerArguments:
         self.pointer_kwargs = pointer_kwargs
 
 
-class PointerNetworkBaseClass(nn.Module, ABC):
+class PointerNetworkBaseClass(ABC, HookedRootModule):
     """
     Implementation of a pointer network, including an encoding stage and a
     decoding stage. Adopted from the original paper:
@@ -309,6 +310,9 @@ class PointerNetworkBaseClass(nn.Module, ABC):
         # if require_init is False, then we need to learn the initial input to the decoder
         if not self.require_init:
             self.decoder_input = nn.Parameter(torch.randn(1, self.embedding_dim))  # Learnable tensor
+
+        self.hook_encoder = HookPoint()
+        self.setup()
 
     def set_temperature(self, temperature):
         """method for setting the temperature of the pointer network"""
@@ -512,7 +516,7 @@ class PointerNetwork(PointerNetworkBaseClass):
         x = self.embedding(x)
 
         # this  will go in each forward pass method of PointerNetwork children
-        encoded = self._forward_encoder(x, mask=mask)
+        encoded = self.hook_encoder(self._forward_encoder(x, mask=mask))
 
         # return the output of the decoder
         log_scores, choices = self._forward_decoder(encoded, mask, max_output, batch_size, init, temperature, thompson)
@@ -571,7 +575,7 @@ class ContextualPointerNetwork(PointerNetworkBaseClass):
         context = self.embedding(context)
 
         # this  will go in each forward pass method of PointerNetwork children
-        encoded = self._forward_encoder(x, context, mask=mask, context_mask=context_mask)
+        encoded = self.hook_encoder(self._forward_encoder(x, context, mask=mask, context_mask=context_mask))
 
         # return the output of the decoder
         log_scores, choices = self._forward_decoder(encoded, mask, max_output, batch_size, init, temperature, thompson)
@@ -629,7 +633,7 @@ class MultimodalPointerNetwork(PointerNetworkBaseClass):
         multimode = [mm_embedding(mmx) for mm_embedding, mmx in zip(self.mm_embedding, multimode)]
 
         # this  will go in each forward pass method of PointerNetwork children
-        encoded = self._forward_encoder(x, multimode, mask=mask, mm_mask=mm_mask)
+        encoded = self.hook_encoder(self._forward_encoder(x, multimode, mask=mask, mm_mask=mm_mask))
 
         # return the output of the decoder
         log_scores, choices = self._forward_decoder(encoded, mask, max_output, batch_size, init, temperature, thompson)
@@ -697,7 +701,7 @@ class MultimodalContextualPointerNetwork(PointerNetworkBaseClass):
         multimode = [mm_embedding(mmx) for mm_embedding, mmx in zip(self.mm_embedding, multimode)]
 
         # this  will go in each forward pass method of PointerNetwork children
-        encoded = self._forward_encoder(x, multimode, mask=mask, mm_mask=mm_mask)
+        encoded = self.hook_encoder(self._forward_encoder(x, multimode, mask=mask, mm_mask=mm_mask))
 
         # return the output of the decoder
         log_scores, choices = self._forward_decoder(encoded, mask, max_output, batch_size, init, temperature, thompson)
