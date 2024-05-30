@@ -1,13 +1,13 @@
 # Pointer Sequencer ML Repository
 
-This repository contains a package for running the game of dominoes with 
-python code. It contains a gameplay engine that can manage a game, a library 
-of agents that play the game with different strategies, and a league manager, 
-which is used to manage a group of agents that play games with each other. 
+This repository contains a package for analyzing pointer networks on 
+sequencing problems. It is still a work-in-progress, I'm in the exploratory
+stage of the project so if you happen to find this, please mind my unfinished
+work. 
 
 I developed the repository to accomplish two main goals: 
-1. Create a dominoes agent that plays the game better than me, and hopefully
-   better than most humans!
+1. Study how transformer based neural networks trained with reinforcement 
+   learning can solve complex sequencing tasks. 
 2. Teach myself about deep reinforcement learning tools and standard coding
    practices. 
 
@@ -44,8 +44,8 @@ command prompt and type `nvidia-smi`. It'll show you the CUDA Version in the
 top right if it's installed. 
 
 ```
-mamba create -n dominoes
-mamba activate dominoes
+mamba create -n pointersequencer
+mamba activate pointersequencer
 pip install <package_name> # go in order through the environment.yml file, ignore the pytorch packages
 
 # use whatever line of code is suggested from the pytorch website:
@@ -58,23 +58,11 @@ of this repository is going to live on markdown files in the [docs](docs)
 folder. These files explain how to use this repository and present analyses of
 the agents I have developed. This is a list of them with links to the file.
 
-### Documentation for Dominoes Package and Experiments
-1. Groundwork for Dominoes in Python
-    - [Rules of the game](docs/dominoeRules.md) -- (not written yet, sorry!)
-    - [Gameplay object](docs/gameplay.md)
-    - Dominoe Agents (Code structure and hand-crafted policies)
-        - [Anatomy of a dominoe agent](docs/agents.md)
-        - [Basic policies](docs/basicPolicies.md)
-    - [Multiplayer ELO System](docs/multiplayerElo.md)
-    - [Tutorials and basic usage](docs/tutorials.md)
-2. Reinforcement Learning Agents
-   - [The TD-Lambda Algorithm](docs/TDLambdaAgents.md)
-
 ### Documentation for Pointer Network Experiments
-1. [Toy Problem (& intro to pointer networks)](docs/pointerDemonstration.md)
-2. [Novel Architecture Comparison on Toy Problem](docs/pointerArchitectureComparison.md)
-3. [Tests on the Traveling Salesman Problem](docs/pointerArchComp_TSP.md)
-4. [A Novel Complex Sequencing Problem](docs/pointerSequencer.md)
+1. [Toy Problem (& intro to pointer networks)](docs/part1-demonstration.md)
+2. [Novel Architecture Comparison on Toy Problem](docs/part2-new_architectures.md)
+3. [Tests on the Traveling Salesman Problem](docs/part3-traveling_salesman.md)
+4. [A Novel Complex Sequencing Problem](docs/part4-dominoe_sequencer.md)
 
 ## Contributing
 Feel free to contribute to this project by opening issues or submitting pull 

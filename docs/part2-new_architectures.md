@@ -10,12 +10,6 @@ different architectures of the pointer attention layer. After that, I'll show
 the results and analysis of the networks performance and mechanisms of solving
 the task. 
 
-You can run this experiment yourself with the following command. The default
-parameters will train 5 networks for each architecture, so this takes about an
-hour on my computer. For a faster test, use the argument ``--num-runs 1``.
-```
-python experiments/pointerArchitectureComparison.py
-```
 
 ## REINFORCE
 The task is identical to the previous experiment in 
@@ -85,7 +79,7 @@ the literature is the one introduced in
 [paper](https://papers.nips.cc/paper_files/paper/2015/file/29921001f2f04bd3baee84a12e98098f-Paper.pdf)
 on pointer networks. Here, I introduce four new architectures (one of which
 has three variants). I'll refer to them as the "pointer layer" throughout. 
-For more detail, see the [code](../dominoes/transformers.py).
+For more detail, see the [code](../ptrseq/networks/attention_modules.py).
 
 #### Inputs to Pointer Layer
 Before the pass through the pointer layer, the full network generates three
@@ -101,7 +95,7 @@ representation of whatever token was chosen.
 
 Let $e = \text{encoded}$, $c = \text{context}$, and $o = \text{output}$.
 
-### Standard Pointer Layer -- [code](https://github.com/landoskape/dominoes/blob/main/dominoes/transformers.py#L436)
+### Standard Pointer Layer
 The standard pointer layer projects the `encoded` and `context` tensors to a
 new space, adds them together (with broadcasting), then projects them onto an
 "attention" vector after passing them through a hyperbolic tangent 
@@ -109,7 +103,7 @@ nonlinearity.
 
 $$\large u_i = v^T \tanh (W_1 e_i + W_2 c)$$
 
-### Pointer "Dot" Layer -- [code](https://github.com/landoskape/dominoes/blob/main/dominoes/transformers.py#L459)
+### Pointer "Dot" Layer
 The pointer dot layer also projects the `encoded` and `context` tensors to a 
 new space, but then takes the dot product between each projected `encoded` 
 vector and the projected `context` vector. This skips the tanh and projection
@@ -118,7 +112,7 @@ onto $v^T$. Because the nonlinearity is dropped, a `LayerNorm` is used on the
 
 $$\large u_i = LN(W_1 e_i) \cdot LN(W_2 c) $$
 
-### Pointer "Dot" Variant 1: Pointer Dot Lean -- [code](https://github.com/landoskape/dominoes/blob/main/dominoes/transformers.py#L511)
+### Pointer "Dot" Variant 1: Pointer Dot Lean
 One variant of the pointer dot layer is called pointer dot lean. It is 
 identical to the above pointer dot layer except it drops the $W_1$ and $W_2$
 matrices. This essentially requires the encoder phase of the pointer network
@@ -127,14 +121,14 @@ can be effectively "pointed" to by the `context` vector.
 
 $$\large u_i = LN(e_i) \cdot LN(c) $$
 
-### Pointer "Dot" Variant 2: Pointer Do No Layer Norm -- [code](https://github.com/landoskape/dominoes/blob/main/dominoes/transformers.py#L484)
+### Pointer "Dot" Variant 2: Pointer Do No Layer Norm
 The other variant is identical to the main pointer dot layer, but doesn't use
 a layer norm. This is a bit noisy, but learns very fast, as you'll see in the
 results. 
 
 $$\large u_i = (W_1 e_i) \cdot (W_2 c) $$
 
-### Pointer "Attention" Layer -- [code](https://github.com/landoskape/dominoes/blob/main/dominoes/transformers.py#L534)
+### Pointer "Attention" Layer
 The pointer attention layer uses a variant of self-attention that I call
 "multi context attention" 
 ([code](https://github.com/landoskape/dominoes/blob/main/dominoes/transformers.py#L310)). 
@@ -149,7 +143,7 @@ representation. This leads to a new attended representation of the `encoded`
 tokens, which is passed through a hyperbolic tangent and projected onto an 
 "attention" vector $v^T$ just like in the standard pointer layer. 
 
-### Pointer "Transformer" Layer -- [code](https://github.com/landoskape/dominoes/blob/main/dominoes/transformers.py#L553)
+### Pointer "Transformer" Layer
 The pointer transformer layer is almost identical to the pointer attention
 layer, except it uses multi context attention followed by the standard double
 feedforward layer used in transformers. 

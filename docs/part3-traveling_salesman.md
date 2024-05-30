@@ -8,24 +8,6 @@ REINFORCE algorithm).
 For more detail on the new architectures, go
 [here](pointerArchitectureComparison.md).
 
-To reproduce the plots in this file, you'll need to run two python scripts. I
-train 8 networks for each architecture type to get a better readout of their
-average performance on the task. The supervised learning script takes quite a
-while to run (~2 hours for each round of networks, so ~16 hours total with the
-default script parameters). This is primarily because the SL task requires the
-optimal solution to the problem, which is exponential with the number of 
-cities. I train with $N=10$ cities. To speed it up, change the arguments to
-`--num-runs 1` and `--num-cities 8`, which is already considerably faster.
-```
-python experiments/ptrArchComp_TSP_SL.py --num-runs 8 --num-cities 10
-```
-
-The reinforcement learning version is much faster because no target needs to 
-be computed. This takes ~30 minutes for each round of networks on my computer
-with default parameters, or ~4 hours total.
-```
-python experiments/ptrArchComp_TSP_RL.py --num-runs 8 --num-cities 10
-```
 
 ## The Traveling Salesman Problem
 The traveling salesman problem is a well-defined, highly-studied problem in 
