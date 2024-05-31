@@ -257,5 +257,31 @@ problem, but I predict that these radical differences in coding mode have someth
 why standard pointer layers fail to solve sequencing tasks. 
 
 
+We can unpack the representations even further and plot all the representations in an entire 
+batch (not just averaged across sort position). To facilitate viewing, I sorted all token 
+representations in the batch by sort position and used the same embedding dimension sorting
+as above (with rastermap). 
+
+For the "standard" and "attention" pointers above, this is what that looks like:
+
+#### Standard Pointer Layer All Token Encodings:
+<img src="./media/encoding_representations/encoded_data_all_tokens_standard_1.png" alt="Pointer Standard All Token Encoding" width="600"/>
+
+#### Attention Pointer Layer All Token Encodings:
+<img src="./media/encoding_representations/encoded_data_all_tokens_attention_14.png" alt="Pointer Attention All Token Encoding" width="600"/>
+
+Similar to the averages, it is readily visible that the tokens are encoded differently when 
+learned with standard pointer layers vs. attention pointer layers. These are even more interesting
+to look at because they show additional distinctions beyond what showed up in the average:
+Whereas each group of tokens in the standard pointer layer are almost identical, regardless of batch,
+the tokens encoded by attention-based pointer networks appear to have significant variation within
+batch (there are 12 groups, each containing 1024 examples, see plot on right to see how they're grouped).
+
+This indicates that pointer networks trained with standard pointer layers teach their encoded to 
+use simple and inflexible codes, while networks trained with attention-based pointer layers appear
+to exhibit much more flexibility. It is possible that some of this variability could be explained
+by the particular set of dominoes selected for the batch-- that's something I'm working on figuring
+out soon. 
+
 
 
