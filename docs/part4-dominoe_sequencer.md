@@ -236,7 +236,7 @@ to sort embedding dimensions so that they are clustered with similar dimensions.
 For standard pointer layers, this is what we get: 
 
 #### Standard Pointer Layer Average Encodings:
-![Standard Average Encoding](./media/encoding_representations/encoded_data_average_standard_1.png){ width=200px }
+<img src="./media/encoding_representations/encoded_data_average_standard_1.png" alt="Pointer Standard Average Encoding" width="600"/>
 
 On the left is the average embedding with a colormap, and the right shows each embeding
 dimensions activity across the tokens as a line plot. It's strange: it seems like networks
@@ -244,10 +244,10 @@ trained with standard pointer layers learn almost one-dimensional codes for sort
 dominoes. How do other pointer layers learn encodings? 
 
 #### Pointer "DotLean" Average Encodings:
-![Pointer DotLean Average Encoding](./media/encoding_representations/encoded_data_average_dot_lean_11.png){ width=200px }
+<img src="./media/encoding_representations/encoded_data_average_dot_lean_11.png" alt="Pointer DotLean Average Encoding" width="600"/>
 
 #### Pointer "Attention" Average Encodings:
-![Pointer Attention Average Encoding](./media/encoding_representations/encoded_data_average_attention_14.png){ width=200px }
+<img src="./media/encoding_representations/encoded_data_average_attention_14.png" alt="Pointer Attention Average Encoding" width="600"/>
 
 
 Interestingly, these two examples of different pointer network architectures learn codes that
