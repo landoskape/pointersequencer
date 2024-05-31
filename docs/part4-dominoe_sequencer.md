@@ -57,8 +57,8 @@ containing the same value exist (and the edge value is always the same).
 2. The path towards a certain dominoe (i.e. node) determines the valid paths 
 away from that dominoe. For example, playing the `(0 | 4)` dominoe after 
 playing the `(3 | 0)` dominoe means that the "open" value is a `4`. This means
-that dominoes with a `4` are valid next steps, but dominoes with a `0` are not
-- even though the last dominoe played (`(0 | 4)`) has a `0` in it. 
+that dominoes with a `4` are valid next steps, but dominoes with a `0` are not- 
+even though the last dominoe played (`(0 | 4)`) has a `0` in it. 
 3. It is not always possible to visit every dominoe (i.e. node), so the agent 
 must determine which dominoes to visit and which to avoid to maximize value.
 
