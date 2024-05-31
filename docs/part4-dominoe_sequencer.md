@@ -236,9 +236,26 @@ to sort embedding dimensions so that they are clustered with similar dimensions.
 For standard pointer layers, this is what we get: 
 
 #### Standard Pointer Layer Average Encodings:
-![Standard Average Encoding](./media/encoding_representations/encoded_data_average_standard_1.png)
+![Standard Average Encoding](./media/encoding_representations/encoded_data_average_standard_1.png){ width=200px }
 
 On the left is the average embedding with a colormap, and the right shows each embeding
 dimensions activity across the tokens as a line plot. It's strange: it seems like networks
 trained with standard pointer layers learn almost one-dimensional codes for sorting 
-dominoes. How do other 
+dominoes. How do other pointer layers learn encodings? 
+
+#### Pointer "DotLean" Average Encodings:
+![Pointer DotLean Average Encoding](./media/encoding_representations/encoded_data_average_dot_lean_11.png){ width=200px }
+
+#### Pointer "Attention" Average Encodings:
+![Pointer Attention Average Encoding](./media/encoding_representations/encoded_data_average_attention_14.png){ width=200px }
+
+
+Interestingly, these two examples of different pointer network architectures learn codes that
+are higher-dimensional and appear to smoothly traverse a space that has hints of translation 
+invariance. I haven't yet applied these analyses to the more complicated dominoe sequencing 
+problem, but I predict that these radical differences in coding mode have something to do with
+why standard pointer layers fail to solve sequencing tasks. 
+
+
+
+
