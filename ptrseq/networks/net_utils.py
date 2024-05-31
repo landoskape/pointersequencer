@@ -48,7 +48,7 @@ def process_multimodal_input(multimode, mm_mask, num_multimodal, mm_dim):
     return mm_batch_size[0], mm_mask
 
 
-def forward_batch(nets, batch, max_output=None, temperature=None, thompson=None):
+def forward_batch(nets, batch, max_output=None, temperature=None, thompson=None, cache=False):
     """
     forward pass for a batch of data on a list of pointer networks
 
@@ -80,10 +80,15 @@ def forward_batch(nets, batch, max_output=None, temperature=None, thompson=None)
         net_kwargs["mm_mask"] = batch.get("mm_mask", None)
 
     # get output of network
-    scores, choices = named_transpose([net(input, *context_inputs, **net_kwargs) for net in nets])
+    if not cache:
+        scores, choices = named_transpose([net(input, *context_inputs, **net_kwargs) for net in nets])
+        cache = None
+    else:
+        output, cache = named_transpose([net.run_with_cache(input, *context_inputs, **net_kwargs) for net in nets])
+        scores, choices = named_transpose(output)
 
     # return outputs
-    return scores, choices
+    return scores, choices, cache
 
 
 def get_device(tensor):

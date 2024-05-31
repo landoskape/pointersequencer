@@ -23,3 +23,4 @@ dependencies:
     - wandb
     - freezedry
     - conditional-parser
+    - rastermap
