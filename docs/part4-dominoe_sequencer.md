@@ -4,36 +4,34 @@ Finally, the dominoes line sequencer task. This task is the reason I began
 using pointer networks to begin with. The dominoes line sequencer task is a 
 complicated version of the traveling salesman problem. The task goes as 
 follows. An agent receives a set of dominoes and has to play the longest 
-possible sequence of dominoes it can following the (somewhat complicated) 
-rules of which dominoes are permitted to follow each other. 
+possible sequence of dominoes it can following the rules of which dominoes
+are permitted to follow each other. 
 
 
 ## The Task
 As I explained in the [toy problem](./pointerDemonstration.md), a full dominoe
-set is the every possible combination with replacement of two values from 0 to
-a number, defined as the highest dominoe. Typically, the highest dominoe value
+set is every possible combination with replacement of two values from 0 to a
+number, defined as the highest dominoe. Typically, the highest dominoe value
 is `9` or `12`, but for an example I'll use `highestDominoe=4`. Below is a 
 representation of 6 dominoes from the set, including both their values and the
 way dominoes are represented to the network (see the toy problem for more
-explanation). Note: unlike the toy problem, in this task `(0 | 1)` is the same
-dominoes as `(1 | 0)`, so each dominoe can only be represented in one 
-direction.
+explanation). 
 
-`(0 | 0)`
+`(0 | 0)` : `[1, 0, 0, 0, 0, 1, 0, 0, 0, 0]`
 
-`(0 | 1)`
+`(0 | 1)` : `[1, 0, 0, 0, 0, 0, 1, 0, 0, 0]`
 
-`(0 | 2)`
+`(0 | 2)` : `[1, 0, 0, 0, 0, 0, 0, 1, 0, 0]`
 
-`(0 | 3)`
+`(0 | 3)` : `[1, 0, 0, 0, 0, 0, 0, 0, 1, 0]`
 
-`(2 | 1)`
+`(2 | 1)` : `[0, 0, 1, 0, 0, 0, 1, 0, 0, 0]`
 
-`(0 | 4)`
+`(0 | 4)` : `[0, 0, 0, 0, 0, 1, 0, 0, 0, 1]`
 
 At the beginning, the agent receives a contextual input telling it what value 
 is currently "available". Suppose for the above hand, the "available" number
-is `3`. Then, the following is a possible sequence:
+is `3`. Then, the following is a possible valid sequence:
 
 From `3`: `(3 | 0)` - `(0 | 0)` - `(0 | 1)` - `(1 | 2)` - `(2 | 0)` - `(0 | 4)`
 
@@ -55,7 +53,7 @@ few differences that make it a bit more complicated.
 
 1. The connection graph is not complete. In other words, if each dominoe is a
 node, not all edges between dominoes exist. Only edges between dominoes 
-containing the same value exist (and the edge length is always equal).
+containing the same value exist (and the edge value is always the same).
 2. The path towards a certain dominoe (i.e. node) determines the valid paths 
 away from that dominoe. For example, playing the `(0 | 4)` dominoe after 
 playing the `(3 | 0)` dominoe means that the "open" value is a `4`. This means
@@ -64,31 +62,14 @@ that dominoes with a `4` are valid next steps, but dominoes with a `0` are not
 3. It is not always possible to visit every dominoe (i.e. node), so the agent 
 must determine which dominoes to visit and which to avoid to maximize value.
 
-There's an additional difference. Whereas the goal of the traveling salesman
-problem is to visit every city in as little distance as possible, the goal of 
-dominoe sequencing (in a real game) is to minimize the number of points left
-in your hand at the end of the game. The tricky bit is that other players are 
-trying to end the game as fast as they can, so an agent doesn't necessarily 
-know how much time is left. This means that in the full dominoes sequencing 
-problem, the agent has two additional considerations to make:
-
-4. The agent should "play dominoes" (i.e. visit nodes) with a higher value as
-soon as possible, and leave dominoes that have a smaller value to be visited 
-layer in the sequence, or not at all if impossible. 
-5. The agent should vary their strategy based on the expected "time left", in 
-the sense that a choice between playing a longer line with more total value
-(which takes more time) and playing a shorter line that dumps value quickly 
-will depend on the agents estimation of how much time is left in the game. 
-This is essentially a dynamic discounting problem. 
-
 ## First steps
 To begin with, I trained pointer networks using all the different 
 architectures I introduced in [this](./pointerArchitectureComparison.md) 
-documentation file with the REINFORCE algorithm. The initial task didn't value
-dominoes differently - each dominoe has a reward of `1`, so the goal is simply
-to play as many dominoes as possible in a valid sequence. This is a pared down
-version of the full problem most relevant for actual dominoes agents, but is a
-useful starting point for exploring how the different architectures perform.
+documentation file with the REINFORCE algorithm. The task doesn't value dominoes
+differently - each dominoe has a reward of `1`, so the goal is simply to play as 
+many dominoes as possible in a valid sequence. This is a pared down version of the 
+full problem most relevant for actual dominoes agents, but is a useful starting point
+for exploring how the different architectures perform.
 
 The reward function is simple:
 - Every valid dominoe play has a reward of `1`.
