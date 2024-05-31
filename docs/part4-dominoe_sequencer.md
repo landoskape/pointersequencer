@@ -220,15 +220,25 @@ This result shows the stunted performance of event the "attention" and
 the standard pointer layer.
 
 
-## Next Steps
-Coming soon:
-- More unpacking of the bidirectional swap experiment described above. 
-- Test of sequencing where a parallel network has to predict the total reward
-accumulated for each hand using the same encoder as the pointer network -- 
-this is going to be useful for when I port these networks to a real dominoe
-agent. 
-- Test of sequencing where the networks receive an additional context input 
-that informs them of how much "time" is left, after which no rewards are
-possible. This will be randomly generated, but in the dominoes agent that can
-actually play the game, this will be computed by the network as a separate 
-module and fed to the pointer network. 
+## How do networks trained with different pointer layers encode information? 
+There's clearly something very different about the standard pointer layer. All
+the other networks can learn the task, but ones with the pointer layer can't. Are
+there any signatures of how standard pointer layers learn token representations
+that can inform us why it's different? 
+
+To answer this question, I returned to the dominoe sorting task, because it's a lot
+more straightforward to analyze. To begin, I recovered the output of the pointer 
+network encoder (see [part1](./part1-demonstration.md) to remember the architecture),
+and plotted the average token embedding, sorted by the networks choice. I used an 
+experimental neuroscience tool called [rastermap](https://github.com/MouseLand/rastermap)
+to sort embedding dimensions so that they are clustered with similar dimensions.
+
+For standard pointer layers, this is what we get: 
+
+#### Standard Pointer Layer Average Encodings:
+![Standard Average Encoding](./media/encoding_representations/encoded_data_average_standard_1.png)
+
+On the left is the average embedding with a colormap, and the right shows each embeding
+dimensions activity across the tokens as a line plot. It's strange: it seems like networks
+trained with standard pointer layers learn almost one-dimensional codes for sorting 
+dominoes. How do other 
