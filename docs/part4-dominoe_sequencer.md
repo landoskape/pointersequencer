@@ -64,7 +64,7 @@ must determine which dominoes to visit and which to avoid to maximize value.
 
 ## First steps
 To begin with, I trained pointer networks using all the different 
-architectures I introduced in [this](./pointerArchitectureComparison.md) 
+architectures I introduced in [this](./part1-demonstration.md) 
 documentation file with the REINFORCE algorithm. The task doesn't value dominoes
 differently - each dominoe has a reward of `1`, so the goal is simply to play as 
 many dominoes as possible in a valid sequence. This is a pared down version of the 
@@ -123,18 +123,14 @@ more reward themselves. They don't achieve optimal reward, but are pretty
 close. All architectures achieve similar performance at the end of 12000 
 training epochs, except for the standard pointer layer. 
 
-## The standard pointer layer confuses the gradient backpropagation
+## The standard pointer layer prevents learning
 Next, I wanted to understand why the networks equipped with the standard 
 pointer layer fail to learn the task. Since the networks are divided into 
 three main modules, the (1) encoder, the (2) context update layer, and the
 (3) pointer layer, I thought that breaking the networks down into their 
 consistuents might reveal where the standard pointer layer networks went 
 wrong. For details on the three modules, see 
-[this](./pointerDemonstration.md).
-
-As a first step, I did a bidirectional "swap" experiment. I retrained pointer
-layers using fixed, pretrained weights in the encoder and the context update 
-layer. I did two experiments, both explained below.
+[this](./part1-demonstration.md).
 
 ### Can the standard pointer layer learn with a functional encoder? 
 I used pretrained encoder & context update weights from networks trained with
@@ -143,9 +139,9 @@ pointer layer with the standard pointer layer. Only the weights of the
 standard pointer layer were subject to gradient updates.
 
 This plot shows the training performance (in terms of average reward per hand)
-for the standard pointer layer learning off of encoders trained with the other
-pointer layer architectures. The label indicates which pointer layer type was
-used to train the encoder. 
+for the standard pointer layer learning off of encoders that are pretrained with
+the other pointer layer architectures. The label indicates which pointer layer
+type was used to train the encoder. 
 
 ![ManyToOne Training](./media/pretrainedManyToOne_sequencer_RL_withBaselinePointerStandard.png)
 
@@ -179,13 +175,15 @@ Only the weights of the new pointer layers were subject to gradient updates.
 This is interesting too! The pointer "attention" and "transformer" layers can
 learn to solve the task with an encoder pretrained using the standard pointer
 layer, albeit not as well as other networks. This indicates that the standard
-pointer layer encoders have enough information to solve the task somewhat well
-but not enough to solve the task as good as possible. 
+pointer layer encoders have enough information to solve the task, but it isn't
+structured in a way that is useful to the standard pointer layer... _even though_
+_it was trained with the standard pointer layer!_ 
 
-The most interesting result is that although the encoders trained with 
-standard pointer layers have enough information to solve the task, that 
-information is not structured in a way that is useful to the standard pointer
-layer, _even though it was trained with the standard pointer layer_. 
+This result also has an important implication for AI safety: it indicates that certain
+abilities can lie dormant in neural networks and only be revealed when something
+has changed downstream. Partially canging the architecture of the network is an
+unusual thing to do, of course, but I can imagine something similar happening if
+the context changes, for example.
 
 As an additional result, the "dot"-based pointer architectures fail to solve
 the task using encoders trained with the standard pointer layer. I believe the
@@ -193,12 +191,6 @@ reason the attention based layers (both the "attention" and "transformer"
 pointer layers) succeed where the "dot" based layers fail is because the 
 attention layers compare the information in each possible output before 
 choosing, which is not true of any other pointer layer. 
-
-![OneToMany maxRewards](./media/pretrainedOneToMany_sequencer_RL_withBaselinePointerStandard_maxRewardDifferential.png)
-
-This result shows the stunted performance of event the "attention" and 
-"transformer" pointer layers when equipped with an encoder pretrained using
-the standard pointer layer.
 
 
 ## How do networks trained with different pointer layers encode information? 
@@ -258,7 +250,7 @@ Whereas each group of tokens in the standard pointer layer are almost identical,
 the tokens encoded by attention-based pointer networks appear to have significant variation within
 batch (there are 12 groups, each containing 1024 examples, see plot on right to see how they're grouped).
 
-This indicates that pointer networks trained with standard pointer layers teach their encoded to 
+This indicates that pointer networks trained with standard pointer layers teach their encoders to 
 use simple and inflexible codes, while networks trained with attention-based pointer layers appear
 to exhibit much more flexibility. It is possible that some of this variability could be explained
 by the particular set of dominoes selected for the batch-- that's something I'm working on figuring
