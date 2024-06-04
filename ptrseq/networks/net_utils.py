@@ -48,7 +48,7 @@ def process_multimodal_input(multimode, mm_mask, num_multimodal, mm_dim):
     return mm_batch_size[0], mm_mask
 
 
-def forward_batch(nets, batch, max_output=None, temperature=None, thompson=None, cache=False):
+def forward_batch(nets, batch, temperature=None, thompson=None, cache=False):
     """
     forward pass for a batch of data on a list of pointer networks
 
@@ -59,7 +59,7 @@ def forward_batch(nets, batch, max_output=None, temperature=None, thompson=None,
     input = batch["input"]
 
     # get current max output for batch
-    max_output = batch.get("max_output", max_output)
+    max_output = batch.get("max_output")
 
     # get kwargs for forward pass
     net_kwargs = dict(
