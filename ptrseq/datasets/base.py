@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from copy import copy
+from random import randint
 import torch
 
 from ..utils import PersistentPool
@@ -164,6 +165,22 @@ class Dataset(ABC):
     def get_max_possible_output(self):
         """required method for getting the maximum possible output for the dataset"""
         raise NotImplementedError
+
+    @abstractmethod
+    def get_token_parameter(self):
+        """required method for getting the token parameter for the dataset (e.g. hand_size for dominoe datasets)"""
+        raise NotImplementedError
+
+    def set_num_tokens(self, prms, updates):
+        """set the number of tokens for this batch (if not already set in updates)"""
+        # if the token parameter isn't specifically set in the updates, then update it here
+        if self.get_token_parameter() not in updates:
+            if prms["token_range"] is not None:
+                # if token range is specified, set it randomly
+                prms[self.get_token_parameter()] = randint(*sorted(prms["token_range"]))
+
+        # otherwise will just use the token parameter set by the dataset constructor originally
+        return prms
 
     @abstractmethod
     def create_training_variables(self, num_nets, **train_parameters):

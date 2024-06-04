@@ -261,6 +261,7 @@ def add_dataset_parameters(parser):
     parser.add_argument("--batch_size", type=int, default=128, help="what batch size to pass to DataLoader")
     parser.add_argument("--threads", type=int, default=1, help="the number of threads to use for generating batches (default=1)")
     parser.add_argument("--ignore_index", type=int, default=-100, help="the index to ignore in the loss function (default=-100)")
+    parser.add_argument("--token-range", type=int, nargs=2, default=None, help="token range for the dataset per batch (default=None)")
 
     # conditional parameters for each task
     is_dominoe_task = lambda x: x in ["dominoe_sequencer", "dominoe_sorter"]

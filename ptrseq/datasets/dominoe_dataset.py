@@ -1,4 +1,5 @@
 from copy import copy
+from random import randint
 from itertools import repeat
 from multiprocessing import Pool, cpu_count
 import torch
@@ -25,6 +26,9 @@ class DominoeMaster(Dataset):
         self.prms = self.get_default_parameters()
         init_prms = self.process_arguments(parameters)  # get initialization parameters
         self.prms = self.parameters(**init_prms)  # update reference parameters for the dataset
+
+        # process parameters
+        self.prms = self.process_parameters(self.prms)
 
         # create base dominoe set
         self.dominoe_set = get_dominoes(self.prms["highest_dominoe"], as_torch=True)
@@ -70,6 +74,7 @@ class DominoeMaster(Dataset):
             return_target=False,
             ignore_index=-100,
             threads=1,
+            token_range=None,
         )
         if self.task == "sequencer":
             params["value_method"] = "length"
@@ -98,6 +103,7 @@ class DominoeMaster(Dataset):
             return_target="return_target",
             ignore_index="ignore_index",
             threads="threads",
+            token_range="token_range",
         )
         required_args, required_kwargs, possible_kwargs = self.task_specific_arguments(
             required_args,
@@ -181,14 +187,20 @@ class DominoeMaster(Dataset):
         )
         return context_parameters
 
-    def get_max_possible_output(self):
+    def get_token_parameter(self):
+        """get the parameter name for the tokens in a batch for this dataset"""
+        return "hand_size"
+
+    def get_max_possible_output(self, prms={}):
         """
         get the maximum possible output for the dataset
 
         returns:
             int, the maximum possible output for the dataset (just the handsize)
         """
-        return self.prms["hand_size"] + (1 if self.null_token else 0)
+        token_prm = self.get_token_parameter()
+        hand_size = prms.get(token_prm, None) or self.prms[token_prm]
+        return hand_size + (1 if self.null_token else 0)
 
     def create_training_variables(self, num_nets, **train_parameters):
         """dataset specific training variable storage"""
@@ -235,29 +247,45 @@ class DominoeMaster(Dataset):
         # get parameters with potential updates
         prms = self.parameters(**kwargs)
 
-        # get a random dominoe hand
-        # will encode the hand as binary representations including null and available tokens if requested
-        # will also include the index of the selection in each hand a list of available values for each batch element
-        # note that dominoes direction is randomized for the input, but not for the target
-        binary_input, binary_available, selection, available = self._random_dominoe_hand(
-            prms["hand_size"],
-            self._randomize_direction(dominoes) if prms["randomize_direction"] else dominoes,
-            prms["highest_dominoe"],
-            prms["batch_size"],
-            null_token=self.null_token,
-            available_token=self.available_token,
-        )
+        if "preselected" in kwargs:
+            # make a preselected batch
+            selection = kwargs["preselected"]["selection"]
+            available = kwargs["preselected"].get("available", None)
+            binary_input, binary_available = self._preselected_dominoe_hand(selection, dominoes, prms["highest_dominoe"], available=available)[:2]
+            prms["hand_size"] = selection.size(1)  # set token parameter to the size of the selection
+
+        else:
+            # randomize token size if not specified in kwargs
+            prms = self.set_num_tokens(prms, kwargs)
+
+            # get a random dominoe hand
+            # will encode the hand as binary representations including null and available tokens if requested
+            # will also include the index of the selection in each hand a list of available values for each batch element
+            # note that dominoes direction is randomized for the input, but not for the target
+            binary_input, binary_available, selection, available = self._random_dominoe_hand(
+                prms["hand_size"],
+                self._randomize_direction(dominoes) if prms["randomize_direction"] else dominoes,
+                prms["highest_dominoe"],
+                prms["batch_size"],
+                null_token=self.null_token,
+                available_token=self.available_token,
+            )
 
         # move inputs to device
         binary_input = self.input_to_device(binary_input, device=device)
         if self.available_token:
             binary_available = self.input_to_device(binary_available, device=device)
 
+        # get maximum possible output for this batch
+        max_output = self.get_max_possible_output(prms)
+
         # create batch dictionary
-        batch = dict(input=binary_input, train=train, selection=selection)
+        batch = dict(input=binary_input, train=train, selection=selection, max_output=max_output)
 
         # add task specific parameters to the batch dictionary
         batch = self._add_task_parameters(batch, binary_available, available, **prms)
+
+        # add any additional parameters to the batch dictionary
         batch.update(prms)
 
         # if target is requested (e.g. for SL tasks) then get target based on registered task
@@ -733,6 +761,39 @@ class DominoeMaster(Dataset):
             binary_available = None
 
         return binary, binary_available
+
+    @torch.no_grad()
+    def _preselected_dominoe_hand(self, selection, dominoes, highest_dominoe, null_token=True, available=None):
+        """
+        method for creating a preselected hand of dominoes and encoding it in a two-hot representation
+
+        args:
+            selection: torch.Tensor, the selection of dominoes in the hand
+            dominoes: torch.Tensor, the dominoes to choose from
+            highest_dominoe: int, the highest value of a dominoe
+            null_token: bool, whether to include a null token in the input
+            available: torch.Tensor, the available value to play on (if not provided, won't make available tokens)
+        """
+        hands = dominoes[selection]
+
+        if available is not None:
+            assert len(available) == len(selection), "available should have the same length as selection"
+
+        assert torch.all(available <= highest_dominoe), "available values should be less than or equal to highest_dominoe"
+        assert torch.all(available >= 0), "available values should be greater than or equal to 0"
+        assert torch.all(selection < len(dominoes)), "selection should be less than the number of dominoes"
+
+        # create a binary representation of the hands
+        kwargs = dict(
+            highest_dominoe=highest_dominoe,
+            available=available,
+            available_token=available is not None,
+            null_token=null_token,
+        )
+        binary_input, binary_available = self._binary_dominoe_representation(hands, **kwargs)
+
+        # return binary representation, the selection indices and the available values
+        return binary_input, binary_available, selection, available
 
     @torch.no_grad()
     def _random_dominoe_hand(self, hand_size, dominoes, highest_dominoe, batch_size, null_token=True, available_token=True):

@@ -45,6 +45,7 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
             return_target=False,
             ignore_index=-100,
             threads=1,
+            token_range=None,
         )
         return params
 
@@ -60,6 +61,7 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
             return_target="return_target",
             ignore_index="ignore_index",
             threads="threads",
+            token_range="token_range",
         )
         init_prms = process_arguments(args, required_args, required_kwargs, possible_kwargs, self.__class__.__name__)[1]
         return init_prms
@@ -110,14 +112,20 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
         """dataset specific testing variable storage"""
         pass  # nothing to do (update testing_variables in place)
 
-    def get_max_possible_output(self):
+    def get_token_parameter(self):
+        """get the parameter name for the tokens in a batch for this dataset"""
+        return "num_cities"
+
+    def get_max_possible_output(self, prms={}):
         """
         get the maximum possible output for the dataset
 
         returns:
             int, the maximum possible output for the dataset (it's just the number of cities minus 1 for the start city)
         """
-        return self.prms["num_cities"] - 1
+        token_prm = self.get_token_parameter()
+        num_cities = prms.get(token_prm, None) or self.prms[token_prm]
+        return num_cities - 1
 
     @torch.no_grad()
     def generate_batch(self, device=None, **kwargs):
@@ -138,6 +146,10 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
         # get parameters with potential updates
         prms = self.parameters(**kwargs)
 
+        # randomize token size if not specified in kwargs
+        prms = self.set_num_tokens(prms, kwargs)
+
+        # generate random coordinates for cities and measure the distances between them
         input = torch.rand((prms["batch_size"], prms["num_cities"], prms["coord_dims"]), dtype=torch.float)
         dists = torch.cdist(input, input)
 
@@ -148,9 +160,10 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
         input = self.input_to_device(input, device=device)
         dists = self.input_to_device(dists, device=device)
         init = self.input_to_device(init, device=device)
-        batch = dict(input=input, dists=dists, init=init)
+        max_output = self.get_max_possible_output(prms)
+        batch = dict(input=input, dists=dists, init=init, max_output=max_output)
 
-        # add task specific parameters to the batch dictionary
+        # add any additional parameters to the batch dictionary
         batch.update(prms)
 
         if prms["return_target"]:
