@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from random import randint
 
 
 def _check_scheduler(scheduler_name):
@@ -266,6 +267,31 @@ class LinearScheduler(_Scheduler):
         return self.final_value + self.value_range * self._get_value_fraction()
 
 
+class RandomIntScheduler(_Scheduler):
+    """
+    Returns a random integer within a range.
+
+    Note: initial_value included for consistency with other schedulers, but it is only used
+    if the user asks for the current_value without stepping the scheduler.
+
+    Example:
+    ```python
+    num_token_scheduler = RandomIntScheduler(minimum_value=1, maximum_value=10)
+    for epoch in range(100):
+        num_tokens = num_token_scheduler.get_value()
+        num_token_scheduler.step()
+    """
+
+    def __init__(self, initial_value, minimum_value, maximum_value, negative_clip=True):
+        super().__init__(initial_value, negative_clip=negative_clip)
+        self.minimum_value = minimum_value
+        self.maximum_value = maximum_value
+
+    def _step_value(self):
+        """update the value of the scheduler"""
+        return randint(self.minimum_value, self.maximum_value)
+
+
 class ConstantScheduler(_Scheduler):
     """
     -- written to be similar to pytorch! some documentation copied directly: --
@@ -293,6 +319,7 @@ SCHEDULER_REGISTRY = {
     "exp": ExponentialScheduler,
     "expbase": ExponentialBaselineScheduler,
     "linear": LinearScheduler,
+    "randint": RandomIntScheduler,
     "constant": ConstantScheduler,
 }
 
@@ -301,6 +328,7 @@ SCHEDULER_REQUIREMENTS = {
     "exp": ["gamma"],
     "expbase": ["final_value", "gamma"],
     "linear": ["final_value", "total_epochs"],
+    "randint": ["minimum_value", "maximum_value"],
     "constant": [],
 }
 
