@@ -24,3 +24,4 @@ dependencies:
     - freezedry
     - conditional-parser
     - rastermap
+    - transformer-lens
