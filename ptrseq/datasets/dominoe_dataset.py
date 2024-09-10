@@ -27,9 +27,6 @@ class DominoeMaster(Dataset):
         init_prms = self.process_arguments(parameters)  # get initialization parameters
         self.prms = self.parameters(**init_prms)  # update reference parameters for the dataset
 
-        # process parameters
-        self.prms = self.process_parameters(self.prms)
-
         # create base dominoe set
         self.dominoe_set = get_dominoes(self.prms["highest_dominoe"], as_torch=True)
 
