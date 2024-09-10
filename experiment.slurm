@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=64              # cpu-cores per task (>1 if multi-threaded tasks)
 #SBATCH --gres=gpu:1                    # number of allocated gpus per node
 #SBATCH --mem=64G                     # total memory per node (4 GB per cpu-core is default)
-#SBATCH --time=04:00:00                 # total run time limit (HH:MM:SS)
+#SBATCH --time=00:10:00                 # total run time limit (HH:MM:SS)
 #SBATCH --mail-type=begin               # send email when job begins
 #SBATCH --mail-type=end                 # send email when job ends
 
@@ -32,7 +32,22 @@ source activate pointersequencer
 start_time=$(date +%s)
 
 # Run the experiment
-python experiment.py ptr_arch_comp --task dominoe_sequencer --train_epochs 2400 --test_epochs 100 --replicates 3 --encoder_method attention --decoder_method attention --save_networks --save_ckpts --freq_ckpts 10 >> $logfile
+python experiment.py ptr_arch_comp \
+    --task dominoe_sequencer \
+    --test_epochs 100 \
+    --replicates 3 \
+    --use_curriculum True \
+    --curriculum_epochs 3 3 3 \
+    --token_range 3 12 \
+    --encoder_method transformer \
+    --decoder_method transformer \
+    --save_networks \
+    --use_timestamp \
+    --timestamp transformers \
+    >> $logfile
+
+# --save_ckpts \
+# --freq_ckpts 10 \
 
 # record the end time
 end_time=$(date +%s)
