@@ -6,7 +6,7 @@ from torch import nn
 from .net_utils import forward_batch
 
 
-def make_baseline_nets(nets, dataset, batch_parameters={}, significance=0.05, max_output=None, temperature=1.0, thompson=False):
+def make_baseline_nets(nets, dataset, batch_parameters={}, significance=0.05, temperature=1.0, thompson=False):
     """create a copy of each network for baseline calculations"""
     bl_nets = [
         BaselineNetwork(
@@ -14,7 +14,6 @@ def make_baseline_nets(nets, dataset, batch_parameters={}, significance=0.05, ma
             dataset,
             batch_parameters=batch_parameters,
             significance=significance,
-            max_output=max_output,
             temperature=temperature,
             thompson=thompson,
         )
@@ -31,7 +30,7 @@ def check_baseline_updates(nets, bl_nets):
 
 
 class BaselineNetwork(nn.Module):
-    def __init__(self, net, dataset, batch_parameters={}, significance=0.05, max_output=None, temperature=1.0, thompson=False):
+    def __init__(self, net, dataset, batch_parameters={}, significance=0.05, temperature=1.0, thompson=False):
         """create a baseline network from a pointer network and a reference batch"""
         super().__init__()
 
@@ -43,7 +42,6 @@ class BaselineNetwork(nn.Module):
         # set dataset and batch parameters
         self.dataset = dataset
         self.batch_parameters = batch_parameters
-        self.max_output = max_output
 
         # set forward kwargs for use in every forward pass
         self.forward_kwargs = dict(

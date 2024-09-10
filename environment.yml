@@ -13,10 +13,9 @@ dependencies:
   - jupyterlab
   - ipympl
   - tqdm
-  - pytorch
-  - torchvision
-  - torchaudio
-  - pytorch-cuda=12.1
+  # - pytorch
+  # - torchvision
+  # - pytorch-cuda=12.1
   - black
   - natsort
   - pip:

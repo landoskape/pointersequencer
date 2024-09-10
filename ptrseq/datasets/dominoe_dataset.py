@@ -55,7 +55,7 @@ class DominoeMaster(Dataset):
 
     def get_default_parameters(self):
         """
-        set the deafult parameters for the task. This is hard-coded here and only here,
+        set the default parameters for the task. This is hard-coded here and only here,
         so if the parameters change, this method should be updated.
 
         None means the parameter is required and doesn't have a default value. Otherwise,
@@ -897,7 +897,7 @@ class DominoeSequencer(DominoeMaster, DatasetSL, DatasetRL):
             results["curriculum_epochs"] = exp.args.curriculum_epochs
 
             # if using checkpoints, check what the latest epoch is
-            use_prev_ckpts = getattr(self.args, "use_prev_ckpts", False)
+            use_prev_ckpts = getattr(exp.args, "use_prev_ckpts", False)
             if use_prev_ckpts:
                 path_ckpts = exp.get_checkpoint_path()
                 checkpoint_path = [get_checkpoint_path(path_ckpts, prefix=prefix) for prefix in phase_names]
