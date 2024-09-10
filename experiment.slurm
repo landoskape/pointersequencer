@@ -44,6 +44,8 @@ python experiment.py ptr_arch_comp \
     --save_networks \
     --use_timestamp \
     --timestamp transformers \
+    --save_ckpts \
+    --use_prev_ckpts \
     >> $logfile
 
 # --save_ckpts \
