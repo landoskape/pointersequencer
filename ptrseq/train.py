@@ -204,8 +204,8 @@ def test(nets, dataset, **parameters):
     # create some variables for storing data related to rewards
     if get_reward:
         track_reward = torch.zeros(num_epochs, num_nets, device="cpu")
-        track_reward_by_pos = torch.zeros(num_epochs, max_possible_output, num_nets, device="cpu")
-        track_confidence = torch.zeros(num_epochs, max_possible_output, num_nets, device="cpu")
+        track_reward_by_pos = torch.full((num_epochs, max_possible_output, num_nets), float("nan"), device="cpu")
+        track_confidence = torch.full((num_epochs, max_possible_output, num_nets), float("nan"), device="cpu")
         if get_target_reward:
             batch_size = dataset.parameters(**parameters).get("batch_size", None)
             track_target_reward = torch.zeros(num_epochs, batch_size, device="cpu")
@@ -230,7 +230,7 @@ def test(nets, dataset, **parameters):
         if get_reward:
             rewards = [dataset.reward_function(choice, batch) for choice in choices]
             if get_target_reward:
-                target_as_choice = dataset.target_as_choice(batch["target"])
+                target_as_choice = dataset.target_as_choice(batch)
                 track_target_reward[epoch] = torch.sum(dataset.reward_function(target_as_choice, batch).detach().cpu(), dim=1)
 
         # save training data
@@ -242,8 +242,8 @@ def test(nets, dataset, **parameters):
             pretemp_scores = dataset.get_pretemp_scores(scores, choices, temperature.get_value())
             for i in range(num_nets):
                 track_reward[epoch, i] = torch.mean(torch.sum(rewards[i], dim=1)).detach().cpu()
-                track_reward_by_pos[epoch, :, i] = torch.mean(rewards[i], dim=0).detach().cpu()
-                track_confidence[epoch, :, i] = torch.mean(pretemp_scores[i], dim=0).detach().cpu()
+                track_reward_by_pos[epoch, : batch["max_output"], i] = torch.mean(rewards[i], dim=0).detach().cpu()
+                track_confidence[epoch, : batch["max_output"], i] = torch.mean(pretemp_scores[i], dim=0).detach().cpu()
                 if get_target_reward:
                     track_network_reward[epoch, :, i] = torch.sum(rewards[i], dim=1).detach().cpu()
 

@@ -188,7 +188,7 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
 
         return torch.stack(path).long()
 
-    def target_as_choice(self, target, ignore_index=None):
+    def target_as_choice(self, batch, ignore_index=None):
         """
         convert the target to a choice based on the ignore index
 
@@ -199,7 +199,10 @@ class TSPDataset(Dataset, DatasetSL, DatasetRL):
         returns:
             torch.Tensor, the choice based on the target
         """
-        ignore_index = ignore_index or self.prms["ignore_index"]
+        if "target" not in batch:
+            raise ValueError("target should be in the batch to convert to a choice!")
+        target = batch["target"]
+        ignore_index = ignore_index or batch["ignore_index"]
         if torch.any(target == ignore_index):
             raise ValueError("ignore_index should not be in the target for the traveling salesman problem!")
         return target

@@ -314,7 +314,7 @@ class DominoeMaster(Dataset):
         else:
             raise ValueError(f"task {self.task} not recognized")
 
-    def target_as_choice(self, target, ignore_index=None):
+    def target_as_choice(self, batch, ignore_index=None):
         """
         convert the target to a choice based on the ignore index
 
@@ -325,10 +325,13 @@ class DominoeMaster(Dataset):
         returns:
             torch.Tensor, the choice based on the target
         """
-        ignore_index = ignore_index or self.prms["ignore_index"]
+        if "target" not in batch:
+            raise ValueError("Target was not found in batch dictionary, include it to use target_as_choice!")
+        target = batch["target"]
+        ignore_index = ignore_index or batch["ignore_index"]
         if self.task == "sequencer":
             choice = target.clone()
-            choice[choice == ignore_index] = self.prms["hand_size"]  # switch ignores to null index
+            choice[choice == ignore_index] = batch["hand_size"]  # switch ignores to null index
             return choice
         elif self.task == "sorting":
             if torch.any(target == ignore_index):
