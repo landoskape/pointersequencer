@@ -74,8 +74,7 @@ class EncodingRepresentationAnalysis:
         batch = dataset.generate_batch(**(parameters | {"batch_size": 1024}))
 
         # run data through the network
-        max_possible_output = parameters.get("max_possible_output")  # this is the maximum number of outputs ever
-        _, choices, cache = forward_batch(nets, batch, max_possible_output, temperature=1.0, thompson=False, cache=True)
+        _, choices, cache = forward_batch(nets, batch, temperature=1.0, thompson=False, cache=True)
 
         # measure rewards
         # rewards = [dataset.reward_function(choice, batch) for choice in choices]

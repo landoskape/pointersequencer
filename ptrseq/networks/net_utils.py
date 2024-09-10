@@ -82,13 +82,11 @@ def forward_batch(nets, batch, temperature=None, thompson=None, cache=False):
     # get output of network
     if not cache:
         scores, choices = named_transpose([net(input, *context_inputs, **net_kwargs) for net in nets])
-        cache = None
+        return scores, choices
     else:
         output, cache = named_transpose([net.run_with_cache(input, *context_inputs, **net_kwargs) for net in nets])
         scores, choices = named_transpose(output)
-
-    # return outputs
-    return scores, choices, cache
+        return scores, choices, cache
 
 
 def get_device(tensor):

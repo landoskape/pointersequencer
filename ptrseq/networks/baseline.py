@@ -49,7 +49,6 @@ class BaselineNetwork(nn.Module):
         self.forward_kwargs = dict(
             temperature=self.temperature,
             thompson=self.thompson,
-            max_output=self.max_output,
         )
 
         # create a reference batch
