@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=64              # cpu-cores per task (>1 if multi-threaded tasks)
 #SBATCH --gres=gpu:1                    # number of allocated gpus per node
 #SBATCH --mem=64G                     # total memory per node (4 GB per cpu-core is default)
-#SBATCH --time=04:20:00                 # total run time limit (HH:MM:SS)
+#SBATCH --time=8:00:00                 # total run time limit (HH:MM:SS)
 #SBATCH --mail-type=begin               # send email when job begins
 #SBATCH --mail-type=end                 # send email when job ends
 
@@ -37,8 +37,16 @@ python experiment.py ptr_arch_comp \
     --test_epochs 100 \
     --replicates 3 \
     --use_curriculum True \
-    --curriculum_epochs 3000 3000 3000 \
+    --curriculum_epochs 12000 12000 12000 \
     --token_range 3 12 \
+    --lr 1e-4 \
+    --wd 1e-6 \
+    --reward_gamma 0.99 \
+    --train_temperature_use_scheduler True \
+    --train_temperature_scheduler expbase \
+    --train_temperature_gamma 0.999 \
+    --train_temperature_initial_value 5.0 \
+    --train_temperature_final_value 1.0 \
     --encoder_method attention \
     --decoder_method attention \
     --save_networks \
