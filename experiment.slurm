@@ -39,11 +39,11 @@ python experiment.py ptr_arch_comp \
     --use_curriculum True \
     --curriculum_epochs 3000 3000 3000 \
     --token_range 3 12 \
-    --encoder_method transformer \
-    --decoder_method transformer \
+    --encoder_method attention \
+    --decoder_method attention \
     --save_networks \
     --use_timestamp \
-    --timestamp transformers \
+    --timestamp attentions \
     --save_ckpts \
     --use_prev_ckpts \
     --freq_ckpts 10 \
