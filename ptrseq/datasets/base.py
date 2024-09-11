@@ -198,7 +198,7 @@ class Dataset(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def target_as_choice(self, target, ignore_index=-100):
+    def target_as_choice(self, batch, ignore_index=-100):
         """required method for converting a target to a choice"""
         raise NotImplementedError
 

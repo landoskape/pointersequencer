@@ -7,7 +7,7 @@ from pathlib import Path
 PATH_REGISTRY = {
     "ZandauZand": Path("C:/Users/andrew/Documents/machineLearning"),
     "atlandau": Path("/n/home05/atlandau/machine_learning"),
-    "landauland": Path("C:/Users/andrew/Documents/MachineLearning/Dominoes-Experiments"),
+    "landauland": Path("/Users/landauland/Documents/MachineLearning/Dominoes-Experiments"),
 }
 
 

@@ -27,7 +27,7 @@ def get_checkpoint_path(path_ckpt, epoch=None, prefix=None):
             return path
 
     # search for latest unique checkpoint
-    prev_checkpoints = list((path_ckpt / "checkpoints").glob("checkpoint_*.tar"))
+    prev_checkpoints = list(path_ckpt.glob("checkpoint_*.tar"))
     single_checkpoint = path_ckpt / "checkpoint.tar"
 
     # if unique checkpoints found, return the latest one (with a warning if non-unique checkpoint also exists)
@@ -71,7 +71,7 @@ def _update_results(results, ckpt_results, num_completed):
 
 def get_checkpoint_epoch(path):
     """Method for getting the last epoch from a checkpoint."""
-    checkpoint = torch.load(path)
+    checkpoint = torch.load(path, weights_only=False)
     return checkpoint["epoch"] + 1
 
 

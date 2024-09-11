@@ -55,7 +55,7 @@ class DominoeMaster(Dataset):
 
     def get_default_parameters(self):
         """
-        set the deafult parameters for the task. This is hard-coded here and only here,
+        set the default parameters for the task. This is hard-coded here and only here,
         so if the parameters change, this method should be updated.
 
         None means the parameter is required and doesn't have a default value. Otherwise,
@@ -314,7 +314,7 @@ class DominoeMaster(Dataset):
         else:
             raise ValueError(f"task {self.task} not recognized")
 
-    def target_as_choice(self, target, ignore_index=None):
+    def target_as_choice(self, batch, ignore_index=None):
         """
         convert the target to a choice based on the ignore index
 
@@ -325,10 +325,13 @@ class DominoeMaster(Dataset):
         returns:
             torch.Tensor, the choice based on the target
         """
-        ignore_index = ignore_index or self.prms["ignore_index"]
+        if "target" not in batch:
+            raise ValueError("Target was not found in batch dictionary, include it to use target_as_choice!")
+        target = batch["target"]
+        ignore_index = ignore_index or batch["ignore_index"]
         if self.task == "sequencer":
             choice = target.clone()
-            choice[choice == ignore_index] = self.prms["hand_size"]  # switch ignores to null index
+            choice[choice == ignore_index] = batch["hand_size"]  # switch ignores to null index
             return choice
         elif self.task == "sorting":
             if torch.any(target == ignore_index):
@@ -897,7 +900,7 @@ class DominoeSequencer(DominoeMaster, DatasetSL, DatasetRL):
             results["curriculum_epochs"] = exp.args.curriculum_epochs
 
             # if using checkpoints, check what the latest epoch is
-            use_prev_ckpts = getattr(self.args, "use_prev_ckpts", False)
+            use_prev_ckpts = getattr(exp.args, "use_prev_ckpts", False)
             if use_prev_ckpts:
                 path_ckpts = exp.get_checkpoint_path()
                 checkpoint_path = [get_checkpoint_path(path_ckpts, prefix=prefix) for prefix in phase_names]
