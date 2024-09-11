@@ -37,5 +37,9 @@ def build_args(*kargs, kvargs={}, append_hyphens=True):
         arg_list.append(key)
     for key, value in kvargs.items():
         arg_list.append(f"--{key}" if append_hyphens else key)
-        arg_list.append(value)
+        if isinstance(value, list):
+            for v in value:
+                arg_list.append(v)
+        else:
+            arg_list.append(value)
     return arg_list
