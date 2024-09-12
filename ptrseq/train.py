@@ -113,6 +113,17 @@ def train(nets, optimizers, dataset, **parameters):
                 with torch.no_grad():
                     bl_rewards = [dataset.reward_function(choice, batch) for choice in bl_choices]
 
+        # print updates to tqdm if using verbose mode
+        if verbose:
+            postfix = {}
+            if get_reward:
+                average_reward = torch.mean(torch.tensor([torch.mean(torch.sum(rewards[inet], dim=1)).detach().cpu() for inet in range(num_nets)]))
+                postfix["AvgReward"] = f"{average_reward:.3f}"
+            if get_loss:
+                average_loss = torch.mean(torch.tensor([loss[inet].detach().cpu() for inet in range(num_nets)]))
+                postfix["AvgLoss"] = f"{average_loss:.3f}"
+            epoch_loop.set_postfix(postfix)
+            
         # backprop with supervised learning (usually using negative log likelihood loss)
         if learning_mode == "supervised":
             for l in loss:
