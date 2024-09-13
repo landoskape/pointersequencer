@@ -43,14 +43,13 @@ python experiment.py ptr_arch_comp \
     --train_temperature_gamma 0.997 \
     --train_temperature_initial_value 5.0 \
     --train_temperature_final_value 1.0 \
-    --encoder_method attention \
-    --decoder_method attention \
+    --encoder_method transformer \
+    --decoder_method transformer \
     --save_networks \
     --use_timestamp \
-    --timestamp attentions \
+    --timestamp transformers \
     --save_ckpts \
     --freq_ckpts 25 \
-    --nosave \
     >> $logfile
 
 # should include a variable token range...
