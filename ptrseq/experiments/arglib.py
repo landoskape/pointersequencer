@@ -5,7 +5,7 @@ def add_standard_training_parameters(parser):
     """arguments for defining the network type, dataset, optimizer, and other metaparameters"""
     parser.add_argument("--learning_mode", type=str, default="reinforce", help="which learning mode to use (default=reinforce)")
     parser.add_argument("--optimizer", type=str, default="Adam", help="what optimizer to train with (default=Adam)")
-    parser.add_argument("--train_epochs", type=int, default=2000, help="how many epochs to train the networks on")
+    parser.add_argument("--train_epochs", type=int, default=24000, help="how many epochs to train the networks on")
     parser.add_argument("--test_epochs", type=int, default=100, help="how many epochs to train the networks on")
     parser.add_argument("--replicates", type=int, default=2, help="how many replicates of each network to train")
     parser.add_argument("--silent", type=argbool, default=False, help="whether or not to print training progress (default=False)")
@@ -17,13 +17,13 @@ def add_standard_training_parameters(parser):
 def add_network_training_metaparameters(parser):
     """arguments for determining default network & training metaparameters"""
     parser.add_argument("--lr", type=float, default=1e-4, help="default learning rate (default=1e-4)")
-    parser.add_argument("--wd", type=float, default=0, help="default weight decay (default=0)")
+    parser.add_argument("--wd", type=float, default=1e-6, help="default weight decay (default=1e-6)")
     parser.add_argument("--reward_gamma", type=float, default=1.0, help="default gamma for reward processing (default=1.0)")
     parser.add_argument(
         "--train_temperature",
         type=float,
-        default=3.0,
-        help="temperature for training (default=3.0, used for initial_value of scheduler if not provided, or overwritten by it if provided)",
+        default=5.0,
+        help="temperature for training (default=5.0, used for initial_value of scheduler if not provided, or overwritten by it if provided)",
     )
     parser.add_argument("--thompson", type=argbool, default=True, help="whether to use Thompson sampling during training (default=True)")
     parser.add_argument("--baseline", type=argbool, default=True, help="whether to use a baseline correction during training (default=True)")
@@ -130,16 +130,16 @@ def add_scheduling_parameters(parser, name="lr"):
 def _add_transformer_parameters(parser, name, num_heads=8, kqnorm=True, expansion=1, kqv_bias=False, mlp_bias=True, residual=True):
     """add conditional parameters for a transformer layer"""
     _prm = lambda prm: f"--{name}_{prm}"
-    _dest = lambda dest: f"{name}_{dest}"
+    _dest = f"{name}_method"
     _in_both = lambda val: val in ["attention", "transformer"]
     parser.add_conditional(
-        _dest("method"), _in_both, _prm("num_heads"), type=int, default=num_heads, help=f"the number of heads in {name} layers (default={num_heads})"
+        _dest, _in_both, _prm("num_heads"), type=int, default=num_heads, help=f"the number of heads in {name} layers (default={num_heads})"
     )
     parser.add_conditional(
-        _dest("method"), _in_both, _prm("kqnorm"), type=argbool, default=kqnorm, help=f"whether to use kqnorm in the {name} (default={kqnorm})"
+        _dest, _in_both, _prm("kqnorm"), type=argbool, default=kqnorm, help=f"whether to use kqnorm in the {name} (default={kqnorm})"
     )
     parser.add_conditional(
-        _dest("method"),
+        _dest,
         "transformer",
         _prm("expansion"),
         type=int,
@@ -147,7 +147,7 @@ def _add_transformer_parameters(parser, name, num_heads=8, kqnorm=True, expansio
         help=f"the expansion of the FF layers in the {name} (default={expansion})",
     )
     parser.add_conditional(
-        _dest("method"),
+        _dest,
         _in_both,
         _prm("kqv_bias"),
         type=argbool,
@@ -155,7 +155,7 @@ def _add_transformer_parameters(parser, name, num_heads=8, kqnorm=True, expansio
         help=f"whether to use bias in the attention kqv layers (default={kqv_bias})",
     )
     parser.add_conditional(
-        _dest("method"),
+        _dest,
         "transformer",
         _prm("mlp_bias"),
         type=argbool,
@@ -163,7 +163,7 @@ def _add_transformer_parameters(parser, name, num_heads=8, kqnorm=True, expansio
         help=f"use bias in the MLP part of the {name} (default={mlp_bias})",
     )
     parser.add_conditional(
-        _dest("method"),
+        _dest,
         "attention",
         _prm("residual"),
         type=argbool,
@@ -258,7 +258,7 @@ def add_checkpointing(parser):
 def add_dataset_parameters(parser):
     """add generic dataset parameters"""
     parser.add_argument("--task", type=str, required=True, help="which task to use (the dataset to load), required")
-    parser.add_argument("--batch_size", type=int, default=128, help="what batch size to pass to DataLoader")
+    parser.add_argument("--batch_size", type=int, default=256, help="what batch size to pass to DataLoader")
     parser.add_argument("--threads", type=int, default=1, help="the number of threads to use for generating batches (default=1)")
     parser.add_argument("--ignore_index", type=int, default=-100, help="the index to ignore in the loss function (default=-100)")
     parser.add_argument("--token_range", type=int, nargs=2, default=None, help="token range for the dataset per batch (default=None)")
@@ -346,7 +346,6 @@ def add_dataset_parameters(parser):
         "--curriculum_epochs",
         type=int,
         nargs="*",
-        default=[1000, 1000],
-        help="how many epochs to train with curriculum (default=[1000, 1000])",
+        help="how many epochs to train with curriculum (no default, it's different for each task / curriculum)",
     )
     return parser
