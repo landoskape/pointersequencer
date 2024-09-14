@@ -9,7 +9,7 @@ def cross_platform_torch_load(path, map_location=None):
         return torch.load(path, map_location=map_location)
     except RuntimeError:
         return torch.load(path, map_location=map_location, pickle_module=torch.jit)
-    
+
 
 def make_checkpoint_path(path_ckpt, epoch, uniq_ckpts, prefix=None):
     """make checkpoint path unique for each epoch if requested"""
@@ -76,9 +76,9 @@ def _update_results(results, ckpt_results, num_completed):
             print(f"skipping {key} in checkpoint results update (not a tensor)")
 
 
-def get_checkpoint_epoch(path):
+def get_checkpoint_epoch(path, device=None):
     """Method for getting the last epoch from a checkpoint."""
-    checkpoint = torch.load(path) #, weights_only=False)
+    checkpoint = torch.load(path, map_location=device)  # , weights_only=False)
     return checkpoint["epoch"] + 1
 
 

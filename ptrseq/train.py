@@ -123,7 +123,7 @@ def train(nets, optimizers, dataset, **parameters):
                 average_loss = torch.mean(torch.tensor([loss[inet].detach().cpu() for inet in range(num_nets)]))
                 postfix["AvgLoss"] = f"{average_loss:.3f}"
             epoch_loop.set_postfix(postfix)
-            
+
         # backprop with supervised learning (usually using negative log likelihood loss)
         if learning_mode == "supervised":
             for l in loss:

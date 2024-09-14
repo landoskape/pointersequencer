@@ -1,7 +1,5 @@
 from copy import copy
-from random import randint
 from itertools import repeat
-from multiprocessing import Pool, cpu_count
 import torch
 
 
@@ -904,7 +902,7 @@ class DominoeSequencer(DominoeMaster, DatasetSL, DatasetRL):
             if use_prev_ckpts:
                 path_ckpts = exp.get_checkpoint_path()
                 checkpoint_path = [get_checkpoint_path(path_ckpts, prefix=prefix) for prefix in phase_names]
-                checkpoint_epochs = [get_checkpoint_epoch(path) if path is not None else None for path in checkpoint_path]
+                checkpoint_epochs = [get_checkpoint_epoch(path, device=exp.device) if path is not None else None for path in checkpoint_path]
                 epochs_finished = [
                     ckpt_epoch is not None and ckpt_epoch >= curr_epoch
                     for ckpt_epoch, curr_epoch in zip(checkpoint_epochs, exp.args.curriculum_epochs)
@@ -917,6 +915,8 @@ class DominoeSequencer(DominoeMaster, DatasetSL, DatasetRL):
                 # only use previous checkpoints if they exist
                 # and are in a phase before or up to the first phase that doesn't need more epochs...
                 use_prev_ckpts = [iphase < idx for iphase in range(len(phase_names))]
+                if idx == len(phase_names) - 1:
+                    use_prev_ckpts[-1] = True
 
             else:
                 use_prev_ckpts = [False] * len(phase_names)
