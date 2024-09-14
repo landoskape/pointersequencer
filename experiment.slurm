@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=64              # cpu-cores per task (>1 if multi-threaded tasks)
 #SBATCH --gres=gpu:1                    # number of allocated gpus per node
 #SBATCH --mem=64G                       # total memory per node (4 GB per cpu-core is default)
-#SBATCH --time=30:00:00                 # total run time limit (HH:MM:SS)
+#SBATCH --time=04:00:00                 # total run time limit (HH:MM:SS)
 #SBATCH --mail-type=begin               # send email when job begins
 #SBATCH --mail-type=end                 # send email when job ends
 
@@ -43,13 +43,14 @@ python experiment.py ptr_arch_comp \
     --train_temperature_gamma 0.997 \
     --train_temperature_initial_value 5.0 \
     --train_temperature_final_value 1.0 \
-    --encoder_method transformer \
-    --decoder_method transformer \
+    --encoder_method attention \
+    --decoder_method attention \
     --save_networks \
     --use_timestamp \
-    --timestamp transformers \
+    --timestamp attentions \
     --save_ckpts \
     --freq_ckpts 25 \
+    --use_prev_ckpts \
     >> $logfile
 
 # should include a variable token range...

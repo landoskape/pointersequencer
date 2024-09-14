@@ -83,7 +83,7 @@ def train(nets, optimizers, dataset, **parameters):
         )
 
     # epoch loop
-    epoch_loop = tqdm(range(starting_epoch, num_epochs), desc="Training Networks") if verbose else range(starting_epoch, num_epochs)
+    epoch_loop = tqdm(range(starting_epoch, num_epochs), desc="Training Networks", mininterval=10) if verbose else range(starting_epoch, num_epochs)
     for epoch in epoch_loop:
         # update scheduler values
         temperature.step(epoch=epoch)
