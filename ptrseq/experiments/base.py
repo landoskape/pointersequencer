@@ -322,7 +322,7 @@ class Experiment(ABC):
             msg = f"the number of detected networks with name signature {name}*.pt does not match the number of requested networks ({len(matches)}/{len(nets)})"
             assert len(matches) == len(nets), msg
         for idx, match in enumerate(matches):
-            c_state_dict = torch.load(self.get_network_path(match))
+            c_state_dict = torch.load(self.get_network_path(match), map_location=self.device)
             nets[idx].load_state_dict(c_state_dict)
         return nets
 
