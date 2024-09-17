@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
+from argparse import Namespace
 from natsort import natsorted
 from freezedry import freezedry
 from conditional_parser import ConditionalArgumentParser
@@ -282,8 +283,15 @@ class Experiment(ABC):
 
         # Load parameters into object
         if use_saved_prms:
+            # NOTE: I used to use self._update_args(prms, verbose=verbose)
             prms = torch.load(self.get_prms_path())
-            self._update_args(prms, verbose=verbose)
+            # Copy metaparameters from currently loaded (we'll let the user overwrite these if they want)
+            init_args = vars(self.args).copy()
+            for ak in init_args:
+                if ak in self.meta_args:
+                    prms[ak] = init_args[ak]
+            # Then overwrite the args with the saved parameters
+            self.args = Namespace(**prms)
 
         # Don't load results if requested
         if no_results:
